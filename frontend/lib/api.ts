@@ -1,6 +1,6 @@
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export async function analyzeContract(file: File, followerCount: number, niche: string) {
+export async function analyzeContract(file: File, followerCount = 50000, niche = "lifestyle") {
   const form = new FormData();
   form.append("file", file);
   form.append("follower_count", String(followerCount));
@@ -21,10 +21,8 @@ export async function getCounterOffer(clauseId: number, originalText: string, cl
 }
 
 export async function calculateDeal(params: {
-  follower_count: number;
-  niche: string;
-  contract_payment_inr: number;
-  exclusivity_months: number;
+  follower_count: number; niche: string;
+  contract_payment_inr: number; exclusivity_months: number;
 }) {
   const res = await fetch(`${API}/calculate`, {
     method: "POST",
@@ -35,16 +33,14 @@ export async function calculateDeal(params: {
   return res.json();
 }
 
-export async function askFollowUp(question: string, contractSummary: string, clauses: any[]) {
+export async function askFollowUp(question: string, summary: string, clauses: any[]) {
   const res = await fetch(`${API}/followup`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, contract_summary: contractSummary, clauses: clauses.slice(0, 5) })
+    body: JSON.stringify({ question, contract_summary: summary, clauses: clauses.slice(0, 5) })
   });
-  if (!res.ok) throw new Error("Follow-up failed");
+  if (!res.ok) throw new Error("Followup failed");
   return res.json();
 }
 
-export function formatINR(n: number): string {
-  return "₹" + n.toLocaleString("en-IN");
-}
+export const formatINR = (n: number) => "₹" + n.toLocaleString("en-IN");

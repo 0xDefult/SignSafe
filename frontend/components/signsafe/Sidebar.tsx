@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -12,6 +13,7 @@ import {
   LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -28,9 +30,26 @@ const bottomNavItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const [user, setUser] = useState<any>(null)
 
-  const handleLogout = () => {
-    // For demo, just redirect to landing page
+  useEffect(() => {
+    if (!supabase) return;
+
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      if (listener) listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
     router.push('/')
   }
 

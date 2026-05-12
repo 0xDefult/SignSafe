@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,11 +19,35 @@ export default function LoginPage() {
       setError("Please fill in all fields");
       return;
     }
+
+    if (!supabase) {
+      setError("Auth not configured");
+      return;
+    }
+
     setLoading(true);
     setError("");
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    router.push("/dashboard");
+
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred");
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
