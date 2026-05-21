@@ -37,7 +37,7 @@ export function ClauseCards({ clauses }: ClauseCardsProps) {
       const data = await getCounterOffer(clause.id, clause.original_text, clause.type);
       setCounterOffers(prev => ({ ...prev, [clause.id]: data }));
     } catch (err) {
-      console.error('Failed to fetch counter offer:', err);
+      // Error handled by lack of offer display
     } finally {
       setLoadingOffers(prev => ({ ...prev, [clause.id]: false }));
     }

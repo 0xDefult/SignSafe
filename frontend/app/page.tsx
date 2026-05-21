@@ -94,30 +94,41 @@ export default function LandingPage() {
               <span className="text-emerald-300">Thanks! Check your email to get started.</span>
             </div>
           ) : (
-            <form onSubmit={handleSignup} className="flex flex-col sm:flex-row items-center gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="flex-1 w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors"
-                required
-              />
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    Start Free Trial
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
-            </form>
+            <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
+              <form onSubmit={handleSignup} className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-xl text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      Start Free Trial
+                      <ArrowRight className="w-5 h-5" />
+                    </>
+                  )}
+                </button>
+              </form>
+              <div className="w-full flex items-center justify-center gap-3">
+                <span className="text-white/40 text-sm">Or try it now:</span>
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white/70 hover:bg-white/10 transition-colors text-sm"
+                >
+                  Upload Sample Contract →
+                </Link>
+              </div>
+            </div>
           )}
 
           <p className="text-white/40 text-sm mt-4">No credit card required. 14-day free trial.</p>

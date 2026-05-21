@@ -244,7 +244,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY_HERE
 ## SUPABASE TABLE
 
 ```sql
-create table contract_history (
+create table analysis_history (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade,
   filename text not null,
@@ -254,8 +254,8 @@ create table contract_history (
   analysis_data jsonb not null,
   created_at timestamp with time zone default now()
 );
-alter table contract_history enable row level security;
-create policy "own" on contract_history for all using (auth.uid() = user_id);
+alter table analysis_history enable row level security;
+create policy "own" on analysis_history for all using (auth.uid() = user_id);
 ```
 
 ---

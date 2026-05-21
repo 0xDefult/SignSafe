@@ -44,3 +44,58 @@ export async function askFollowUp(question: string, summary: string, clauses: an
 }
 
 export const formatINR = (n: number) => "₹" + n.toLocaleString("en-IN");
+
+export async function createTeam(name: string, token: string) {
+  const res = await fetch(`${API}/teams?name=${name}`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to create team");
+  return res.json();
+}
+
+export async function getMyTeams(token: string) {
+  const res = await fetch(`${API}/teams/me`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to fetch teams");
+  return res.json();
+}
+
+export async function getTeamMembers(teamId: string, token: string) {
+  const res = await fetch(`${API}/teams/${teamId}/members`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to fetch members");
+  return res.json();
+}
+
+export async function inviteTeamMember(teamId: string, email: string, name: string, role: string, token: string) {
+  const res = await fetch(`${API}/teams/${teamId}/invites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({ email, name, role })
+  });
+  if (!res.ok) throw new Error("Failed to send invite");
+  return res.json();
+}
+
+export async function updateMemberRole(teamId: string, userId: string, role: string, token: string) {
+  const res = await fetch(`${API}/teams/${teamId}/members/${userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({ role })
+  });
+  if (!res.ok) throw new Error("Failed to update role");
+  return res.json();
+}
+
+export async function joinTeam(token: string, authHtoken: string) {
+  const res = await fetch(`${API}/teams/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${authHtoken}` },
+    body: JSON.stringify({ token })
+  });
+  if (!res.ok) throw new Error("Failed to join team");
+  return res.json();
+}

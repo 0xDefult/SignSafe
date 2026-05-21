@@ -12,6 +12,7 @@ interface RightPanelProps {
   greenCount: number;
   estimatedLoss: number;
   riskScore: number;
+  onUploadClick?: () => void;
 }
 
 export function RightPanel({
@@ -21,7 +22,8 @@ export function RightPanel({
   yellowCount,
   greenCount,
   estimatedLoss,
-  riskScore
+  riskScore,
+  onUploadClick
 }: RightPanelProps) {
   const totalFlags = redCount + yellowCount;
 
@@ -110,7 +112,7 @@ export function RightPanel({
       {/* Upload CTA */}
       <div className="p-4 mt-auto">
         <button
-          onClick={() => window.location.href = '/'}
+          onClick={onUploadClick}
           className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-95"
           style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)' }}
         >

@@ -22,10 +22,18 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     if (!email.trim()) { setEmailError("Email is required"); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setEmailError("Please enter a valid email"); return; }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    setStep("sent");
+    try {
+      if (!supabase) throw new Error("Authentication service unavailable");
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+      if (error) throw error;
+      setStep("sent");
+    } catch (err: any) {
+      setEmailError(err.message || "Failed to send reset email. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ── Step 2: Verify OTP code ── */
@@ -35,7 +43,6 @@ export default function ForgotPasswordPage() {
     next[index] = value;
     setCode(next);
     setCodeError("");
-    // Auto-focus next box
     if (value && index < 5) {
       const nextEl = document.getElementById(`otp-${index + 1}`);
       nextEl?.focus();
@@ -52,10 +59,22 @@ export default function ForgotPasswordPage() {
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     if (code.some((d) => !d)) { setCodeError("Please enter the full 6-digit code"); return; }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
-    setLoading(false);
-    setStep("reset");
+    try {
+      if (!supabase) throw new Error("Authentication service unavailable");
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: code.join(''),
+        type: 'recovery'
+      });
+      if (error) throw error;
+      setStep("reset");
+    } catch (err: any) {
+      setCodeError(err.message || "Invalid or expired verification code.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ── Step 3: Set new password ── */
@@ -67,10 +86,20 @@ export default function ForgotPasswordPage() {
     if (!confirmPassword) errs.confirmPassword = "Please confirm your password";
     else if (newPassword !== confirmPassword) errs.confirmPassword = "Passwords do not match";
     if (Object.keys(errs).length) { setPasswordErrors(errs); return; }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    setStep("done");
+    try {
+      if (!supabase) throw new Error("Authentication service unavailable");
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      if (error) throw error;
+      setStep("done");
+    } catch (err: any) {
+      setPasswordErrors({ global: err.message || "Failed to reset password. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputBase = "w-full rounded-xl pl-12 pr-4 py-3.5 text-white placeholder-white/25 focus:outline-none transition-colors text-sm";
@@ -275,6 +304,7 @@ export default function ForgotPasswordPage() {
                   <>Reset Password <ArrowRight className="w-5 h-5" /></>
                 )}
               </button>
+              {passwordErrors.global && <p className="text-red-400 text-xs mt-3 text-center">{passwordErrors.global}</p>}
             </form>
           </>
         )}

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, field_validator
 from typing import List, Optional
 from enum import Enum
+from datetime import datetime
 
 class RiskLevel(str, Enum):
     RED = "red"
@@ -18,6 +19,48 @@ class ClauseType(str, Enum):
     KILL_FEE = "kill_fee"
     AUTO_RENEWAL = "auto_renewal"
     OTHER = "other"
+
+class TeamRole(str, Enum):
+    ADMIN = "ADMIN"
+    LEGAL_ANALYST = "LEGAL_ANALYST"
+    REVIEWER = "REVIEWER"
+    VIEWER = "VIEWER"
+
+class TeamStatus(str, Enum):
+    PENDING = "PENDING"
+    ACCEPTED = "ACCEPTED"
+    EXPIRED = "EXPIRED"
+
+class Team(BaseModel):
+    id: str
+    name: str
+    owner_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+class TeamMember(BaseModel):
+    team_id: str
+    user_id: str
+    role: TeamRole
+    joined_at: Optional[datetime] = None
+
+class Invitation(BaseModel):
+    id: str
+    team_id: str
+    email: str
+    role: TeamRole
+    token: str
+    invited_by: Optional[str] = None
+    status: TeamStatus
+    expires_at: datetime
+    created_at: Optional[datetime] = None
+
+class InvitationRequest(BaseModel):
+    email: str
+    name: str
+    role: TeamRole
+
+class JoinRequest(BaseModel):
+    token: str
 
 class Clause(BaseModel):
     id: int

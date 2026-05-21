@@ -5,8 +5,8 @@ import type { NextRequest } from "next/server";
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
-  // Only protect these routes
-  const protectedRoutes = ["/history"];
+  // Protect all dashboard-related routes
+  const protectedRoutes = ["/dashboard", "/history", "/contracts", "/analytics", "/settings", "/team", "/support"];
   const isProtected = protectedRoutes.some(r => req.nextUrl.pathname.startsWith(r));
 
   if (!isProtected) return res;
@@ -25,5 +25,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/history/:path*"]
+  matcher: ["/dashboard/:path*", "/history/:path*", "/contracts/:path*", "/analytics/:path*", "/settings/:path*", "/team/:path*", "/support/:path*"],
 };

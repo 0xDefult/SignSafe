@@ -1,60 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { FileText, Search, Filter, MoreVertical, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { Sidebar } from "@/components/signsafe/Sidebar";
-
-const contracts = [
-  {
-    id: 1,
-    name: "Master Services Agreement v2.1",
-    project: "Project Orion",
-    status: "Under Review",
-    risk: "Medium",
-    riskColor: "text-yellow-400",
-    date: "28 Aug, 2023",
-    pages: 28,
-  },
-  {
-    id: 2,
-    name: "NDA - Confidential Partnership",
-    project: "Project Phoenix",
-    status: "Approved",
-    risk: "Low",
-    riskColor: "text-emerald-400",
-    date: "25 Aug, 2023",
-    pages: 12,
-  },
-  {
-    id: 3,
-    name: "Software License Agreement",
-    project: "Project Atlas",
-    status: "Flagged",
-    risk: "High",
-    riskColor: "text-red-400",
-    date: "22 Aug, 2023",
-    pages: 45,
-  },
-  {
-    id: 4,
-    name: "Employment Contract - Senior Dev",
-    project: "HR Operations",
-    status: "Approved",
-    risk: "Low",
-    riskColor: "text-emerald-400",
-    date: "20 Aug, 2023",
-    pages: 8,
-  },
-  {
-    id: 5,
-    name: "Vendor Agreement - Cloud Services",
-    project: "Infrastructure",
-    status: "Under Review",
-    risk: "Medium",
-    riskColor: "text-yellow-400",
-    date: "18 Aug, 2023",
-    pages: 32,
-  },
-];
+import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 const statusIcon = (status: string) => {
   switch (status) {
@@ -68,6 +18,54 @@ const statusIcon = (status: string) => {
 };
 
 export default function ContractsPage() {
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        if (!supabase) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from('analysis_history')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const mapped = data.map(c => ({
+          id: c.id,
+          name: c.filename,
+          project: "General",
+          status: "Analyzed",
+          risk: c.overall_score === 'red' ? 'High' : c.overall_score === 'yellow' ? 'Medium' : 'Low',
+          riskColor: c.overall_score === 'red' ? 'text-red-400' : c.overall_score === 'yellow' ? 'text-yellow-400' : 'text-emerald-400',
+          date: new Date(c.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+          pages: 'N/A',
+        }));
+        setContracts(mapped);
+      } catch (e) {
+        console.error("Error fetching contracts:", e instanceof Error ? e.message : e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchContracts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex" style={{ background: "#08080F" }}>
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center" style={{ marginLeft: 240 }}>
+          <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen flex" style={{ background: "#08080F" }}>
       <Sidebar />
@@ -110,12 +108,12 @@ export default function ContractsPage() {
             {contracts.map((contract) => (
               <tr key={contract.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
+                  <Link href={`/dashboard?id=${contract.id}`} className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
                       <FileText className="w-5 h-5 text-violet-400" />
                     </div>
                     <span className="text-white font-medium">{contract.name}</span>
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-6 py-4 text-white/60">{contract.project}</td>
                 <td className="px-6 py-4">

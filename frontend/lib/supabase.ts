@@ -5,6 +5,7 @@ const getSupabaseClient = () => {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key || key === "YOUR_ANON_KEY_HERE") {
+    console.error("Supabase environment variables are missing or invalid.");
     return null;
   }
 

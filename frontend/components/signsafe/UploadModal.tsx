@@ -1,8 +1,11 @@
-import { useState, useCallback } from "react";
-import { X, Upload, FileText, CheckCircle } from "lucide-react";
+"use client";
+
+import { useState, useCallback, useEffect } from "react";
+import { X, Upload, FileText, CheckCircle, Users } from "lucide-react";
 import { analyzeContract } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import PlasmaOrb from "./PlasmaOrb";
+import { supabase } from "@/lib/supabase";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -16,6 +19,35 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
+  const [teams, setTeams] = useState<any[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchTeams = async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) return;
+          const { data } = await supabase
+            .from('team_members')
+            .select('teams(id, name), team_id')
+            .eq('user_id', session.user.id)
+            .execute();
+          if (data) {
+            const formattedTeams = data.map(d => ({
+              id: d.team_id,
+              name: d.teams?.name || "Unnamed Team"
+            }));
+            setTeams(formattedTeams);
+            if (formattedTeams.length > 0) setSelectedTeamId(formattedTeams[0].id);
+          }
+        } catch (e) {
+          console.error("Error fetching teams for upload:", e);
+        }
+      };
+      fetchTeams();
+    }
+  }, [isOpen]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -65,6 +97,24 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       sessionStorage.setItem("signsafe_analysis", JSON.stringify(result));
       sessionStorage.setItem("signsafe_filename", file.name);
 
+      try {
+        if (!supabase) throw new Error("Supabase not initialized");
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.from('analysis_history').insert({
+            user_id: user.id,
+            team_id: selectedTeamId,
+            filename: file.name,
+            verdict: result.verdict,
+            overall_score: result.overall_score,
+            estimated_loss_inr: result.estimated_loss_inr,
+            analysis_data: result,
+          });
+        }
+      } catch (saveError) {
+        console.error("Error saving analysis to Supabase:", saveError);
+      }
+
       setTimeout(() => {
         router.push("/dashboard");
         onClose();
@@ -81,19 +131,15 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Plasma Orb Overlay when uploading */}
       {uploading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-md">
           <PlasmaOrb filename={files[0]?.name || "Contract"} progress={progress} />
         </div>
       )}
 
-      {/* Modal */}
       <div className="relative bg-[#0D0D14] border border-white/10 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Upload Contract</h2>
           <button
@@ -104,14 +150,12 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </button>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
             {error}
           </div>
         )}
 
-        {/* Drop Zone */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -139,7 +183,6 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </label>
         </div>
 
-        {/* File List */}
         {files.length > 0 && (
           <div className="mt-4 space-y-2">
             {files.map((file, index) => (
@@ -167,7 +210,23 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </div>
         )}
 
-        {/* Actions */}
+        <div className="mt-6">
+          <label className="flex items-center gap-2 text-white/60 text-sm mb-2">
+            <Users className="w-4 h-4" />
+            Upload to
+          </label>
+          <select
+            value={selectedTeamId || ""}
+            onChange={(e) => setSelectedTeamId(e.target.value || null)}
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors"
+          >
+            <option value="">Personal Space</option>
+            {teams.map(team => (
+              <option key={team.id} value={team.id}>{team.name}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="flex items-center justify-end gap-3 mt-6">
           <button
             onClick={onClose}

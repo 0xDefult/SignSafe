@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { DM_Sans, Instrument_Serif } from 'next/font/google'
 import './globals.css'
+import { Toaster } from 'sonner'
+import { UploadProvider } from '@/lib/upload-context'
+import { InviteProvider } from '@/lib/invite-context'
+import InviteModal from '@/components/signsafe/InviteModal'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -27,7 +31,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background">
       <body className={`${dmSans.variable} ${instrumentSerif.variable} font-sans antialiased`}>
-        {children}
+        <UploadProvider>
+          <InviteProvider>
+            {children}
+            <InviteModal />
+            <Toaster position="top-center" expand={false} richColors />
+          </InviteProvider>
+        </UploadProvider>
       </body>
     </html>
   )

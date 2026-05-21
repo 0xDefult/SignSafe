@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const passwordStrength = (pw: string) => {
     if (!pw) return 0;
@@ -33,17 +35,64 @@ export default function SignupPage() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Please enter a valid email";
     if (!formData.password) newErrors.password = "Password is required";
     else if (formData.password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (!termsAccepted) newErrors.terms = "You must accept the terms and conditions";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+
+    if (!validateForm()) {
+      return;
+    }
+
+    if (!supabase) {
+      setErrors({ general: "Auth not configured" });
+      return;
+    }
+
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setLoading(false);
-    router.push("/dashboard");
+    setErrors({});
+
+    try {
+      console.log("Attempting signup with Supabase...");
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+          },
+        },
+      });
+
+      if (authError) {
+        console.error("Supabase Auth Error Detail:", authError);
+        const friendlyError = authError.message.toLowerCase().includes("invalid")
+          ? "The email address provided is not recognized as valid. Please check for typos."
+          : authError.message;
+        setErrors({ general: friendlyError });
+        setLoading(false);
+        return;
+      }
+
+      if (data.session) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setErrors({ general: "Check your email for the confirmation link!" });
+        setLoading(false);
+      }
+    } catch (err: any) {
+      console.error("Network/System Error during signup:", err);
+      if (err.message === "Failed to fetch") {
+        setErrors({ general: "Unable to connect to the authentication server. Please check your internet connection or Supabase project status." });
+      } else {
+        setErrors({ general: err.message || "An unexpected error occurred" });
+      }
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,17 +102,17 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#08080F" }}>
+    <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
       {/* Left Panel - Form */}
       <div className="flex-1 flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 mb-12">
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold"
               style={{ background: "linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)" }}
             >
-              AI
+              S
             </div>
             <span className="text-white font-semibold text-xl">SignSafe</span>
           </Link>
@@ -159,6 +208,8 @@ export default function SignupPage() {
               <input
                 type="checkbox"
                 id="terms"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="w-4 h-4 mt-0.5 rounded"
                 style={{ accentColor: "#7C3AED" }}
               />

@@ -15,13 +15,19 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all fields");
+
+    // 1. Client-side validation to save API quota and provide instant feedback
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError("Please enter both email and password");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setError("Please enter a valid email address");
       return;
     }
 
     if (!supabase) {
-      setError("Auth not configured");
+      setError("Authentication service is temporarily unavailable");
       return;
     }
 
@@ -30,22 +36,31 @@ export default function LoginPage() {
 
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
+        email: formData.email.trim(),
         password: formData.password
       });
 
       if (authError) {
-        setError(authError.message);
+        // Map technical errors to user-friendly messages
+        const friendlyError = authError.message.includes("Invalid credentials")
+          ? "Invalid email or password. Please try again."
+          : authError.message;
+
+        setError(friendlyError);
         setLoading(false);
         return;
       }
 
       if (data.session) {
+        // Force a refresh of the current page to update server-side auth state
         router.push("/dashboard");
         router.refresh();
+      } else {
+        setError("Authentication failed. Please try again.");
+        setLoading(false);
       }
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+      setError("A system error occurred. Please try again later.");
       setLoading(false);
     }
   };
@@ -57,7 +72,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: "#08080F" }}>
+    <div className="min-h-screen flex" style={{ background: "var(--bg)" }}>
       {/* Left Panel - Visual */}
       <div className="hidden lg:flex flex-1 items-center justify-center border-r border-white/5" style={{ background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(6,182,212,0.08) 100%)" }}>
         <div className="text-center px-12">
@@ -90,10 +105,10 @@ export default function LoginPage() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 mb-12">
             <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold"
               style={{ background: "linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)" }}
             >
-              AI
+              S
             </div>
             <span className="text-white font-semibold text-xl">SignSafe</span>
           </Link>

@@ -79,11 +79,20 @@ export function Sidebar() {
             className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-xs"
             style={{ background: 'linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)' }}
           >
-            AC
+            {user?.user_metadata?.full_name
+            ? user.user_metadata.full_name
+                .split(' ')
+                .map((n: string) => n[0])
+                .join('')
+                .toUpperCase()
+                .slice(0, 2)
+            : '??'}
           </div>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-foreground text-sm font-medium truncate">Alex C.</p>
+          <p className="text-foreground text-sm font-medium truncate">
+            {user?.user_metadata?.full_name || 'Guest User'}
+          </p>
           <span
             className="text-xs font-semibold px-2 py-0.5 rounded-full"
             style={{ background: 'rgba(124,58,237,0.25)', color: '#A78BFA' }}

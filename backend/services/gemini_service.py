@@ -34,11 +34,37 @@ def _call_gemini(prompt, temperature=0.1):
     )
     return response.text
 
+def _sanitize_input(text: str) -> str:
+    """
+    Prevents basic prompt injection by removing common attack patterns
+    and ensuring the text is treated as data.
+    """
+    if not text:
+        return ""
+    # Remove common prompt injection keywords if they appear as commands
+    patterns = [
+        r"ignore all previous instructions",
+        r"disregard the above",
+        r"system prompt",
+        r"forget your rules",
+        r"new instructions:",
+        r"stop analyzing and instead",
+    ]
+    sanitized = text
+    for pattern in patterns:
+        sanitized = re.sub(pattern, "[SENSITIVE CONTENT REMOVED]", sanitized, flags=re.IGNORECASE)
+    return sanitized
+
 async def analyze_contract(contract_text, follower_count=50000, niche="lifestyle"):
     template = _load_prompt("analyze_prompt.txt")
-    if len(contract_text) > 40000:
-        contract_text = contract_text[:40000] + "\n[TRUNCATED]"
-    prompt = template.format(contract_text=contract_text, follower_count=follower_count, niche=niche)
+
+    # Sanitize input to prevent prompt injection
+    sanitized_text = _sanitize_input(contract_text)
+
+    if len(sanitized_text) > 40000:
+        sanitized_text = sanitized_text[:40000] + "\n[TRUNCATED]"
+
+    prompt = template.format(contract_text=sanitized_text, follower_count=follower_count, niche=niche)
     try:
         return AnalysisResponse(**_clean_json(_call_gemini(prompt, 0.05)))
     except Exception as e:
