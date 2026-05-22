@@ -22,8 +22,7 @@ class ClauseType(str, Enum):
 
 class TeamRole(str, Enum):
     ADMIN = "ADMIN"
-    LEGAL_ANALYST = "LEGAL_ANALYST"
-    REVIEWER = "REVIEWER"
+    MEMBER = "MEMBER"
     VIEWER = "VIEWER"
 
 class TeamStatus(str, Enum):

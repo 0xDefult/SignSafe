@@ -81,6 +81,21 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ---
 
+---
+ 
+## Access Control & Roles
+ 
+The system uses a team-based role system to manage permissions:
+ 
+| Role | Permissions |
+| :--- | :--- |
+| **ADMIN** | **Full Control:** Create teams, invite new members, modify member roles, and remove members from a team. |
+| **LEGAL_ANALYST** | **Member Access:** Access team dashboards and view members. (Analysis permissions pending). |
+| **REVIEWER** | **Member Access:** Access team dashboards and view members. (Review permissions pending). |
+| **VIEWER** | **Read-Only:** View team membership and basic team details. |
+ 
+---
+ 
 ## Built for Hack Club Horizons
 
 Open Source · MIT License · Built by creators, for creators.

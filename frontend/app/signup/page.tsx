@@ -120,6 +120,12 @@ export default function SignupPage() {
           <h1 className="text-3xl font-serif text-white mb-2">Create your account</h1>
           <p className="text-white/50 mb-8 leading-relaxed">Start analyzing contracts with AI-powered insights.</p>
 
+          {errors.general && (
+            <div className="mb-6 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center animate-fade-in">
+              {errors.general}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name */}
             <div>

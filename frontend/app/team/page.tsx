@@ -10,8 +10,7 @@ import { useInviteModal } from "@/lib/invite-context";
 
 const roleColors: Record<string, string> = {
   ADMIN: "bg-violet-500/20 text-violet-400",
-  LEGAL_ANALYST: "bg-cyan-500/20 text-cyan-400",
-  REVIEWER: "bg-emerald-500/20 text-emerald-400",
+  MEMBER: "bg-cyan-500/20 text-cyan-400",
   VIEWER: "bg-white/10 text-white/60",
 };
 
@@ -196,7 +195,7 @@ export default function TeamPage() {
                           {userRole === 'ADMIN' && member.user_id !== userId && (
                             <button
                               onClick={() => {
-                                const newRole = prompt("Enter new role (ADMIN, LEGAL_ANALYST, REVIEWER, VIEWER):");
+                                const newRole = prompt("Enter new role (ADMIN, MEMBER, VIEWER):");
                                 if (newRole) handleUpdateRole(member.user_id, newRole.toUpperCase());
                               }}
                               className="p-2 hover:bg-white/10 rounded-lg transition-colors"
