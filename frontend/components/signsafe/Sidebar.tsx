@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { useUser } from '@/context/UserContext'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -30,21 +31,7 @@ const bottomNavItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
-  const [user, setUser] = useState<any>(null)
-
-  useEffect(() => {
-    if (!supabase) return;
-
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      if (listener) listener.subscription.unsubscribe();
-    };
-  }, []);
+  const { user } = useUser()
 
   const handleLogout = async () => {
     if (supabase) {

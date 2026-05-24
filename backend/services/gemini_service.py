@@ -61,8 +61,11 @@ async def analyze_contract(contract_text, follower_count=50000, niche="lifestyle
     # Sanitize input to prevent prompt injection
     sanitized_text = _sanitize_input(contract_text)
 
-    if len(sanitized_text) > 40000:
-        sanitized_text = sanitized_text[:40000] + "\n[TRUNCATED]"
+    # Handle long contracts (Gemini 2.5 Flash supports massive context windows)
+    # Increase limit to 1,000,000 characters (~250k tokens) to protect API but allow large legal docs
+    MAX_CHARACTERS = 1000000
+    if len(sanitized_text) > MAX_CHARACTERS:
+        sanitized_text = sanitized_text[:MAX_CHARACTERS] + "\n\n[CRITICAL: Document truncated due to extreme length. Analysis based on first 1M characters.]"
 
     prompt = template.format(contract_text=sanitized_text, follower_count=follower_count, niche=niche)
     try:

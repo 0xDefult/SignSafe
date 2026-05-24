@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'sonner'
 import { UploadProvider } from '@/lib/upload-context'
 import { InviteProvider } from '@/lib/invite-context'
+import { UserProvider } from '@/context/UserContext'
 import InviteModal from '@/components/signsafe/InviteModal'
 
 const dmSans = DM_Sans({
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body className={`${dmSans.variable} ${instrumentSerif.variable} font-sans antialiased`}>
         <UploadProvider>
           <InviteProvider>
-            {children}
+            <UserProvider>
+              {children}
+            </UserProvider>
             <InviteModal />
             <Toaster position="top-center" expand={false} richColors />
           </InviteProvider>

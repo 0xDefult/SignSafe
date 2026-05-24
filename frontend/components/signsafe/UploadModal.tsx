@@ -6,6 +6,7 @@ import { analyzeContract } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import PlasmaOrb from "./PlasmaOrb";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface UploadModalProps {
 
 export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const router = useRouter();
+  const { user } = useUser();
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -26,13 +28,17 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
     if (isOpen) {
       const fetchTeams = async () => {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
-          const { data } = await supabase
+          if (!user) return;
+          const { data, error: teamError } = await supabase
             .from('team_members')
             .select('teams(id, name), team_id')
-            .eq('user_id', session.user.id)
-            .execute();
+            .eq('user_id', user.id);
+
+          if (teamError) {
+            console.error("Supabase error fetching teams:", teamError);
+            return;
+          }
+
           if (data) {
             const formattedTeams = data.map(d => ({
               id: d.team_id,
@@ -47,7 +53,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       };
       fetchTeams();
     }
-  }, [isOpen]);
+  }, [isOpen, user]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -99,7 +105,6 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
       try {
         if (!supabase) throw new Error("Supabase not initialized");
-        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase.from('analysis_history').insert({
             user_id: user.id,

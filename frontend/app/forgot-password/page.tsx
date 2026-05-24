@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Mail, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 type Step = "request" | "sent" | "reset" | "done";
 

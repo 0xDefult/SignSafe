@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useUploadModal } from "@/lib/upload-context";
 import { supabase } from "@/lib/supabase";
 import { useSearchParams } from "next/navigation";
+import { useUser } from "@/context/UserContext";
 
 import { DashboardLayout } from "@/components/signsafe/DashboardLayout";
 import { Navbar } from "@/components/signsafe/Navbar";
@@ -13,21 +14,20 @@ import { ClauseCards } from "@/components/signsafe/ClauseCards";
 export default function DashboardPage() {
   const searchParams = useSearchParams();
   const contractId = searchParams.get('id');
+  const { user } = useUser();
   const [analysis, setAnalysis] = useState<any>(null);
   const [filename, setFilename] = useState("");
-  const [userName, setUserName] = useState<string | null>(null);
+  const userName = user?.user_metadata?.full_name || null;
 
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
-        if (!supabase) return;
-
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        setUserName(user.user_metadata?.full_name || null);
+        if (!supabase || !user) return;
 
         let query = supabase
+          .from('analysis_history')
+          .select('*')
+          .eq('user_id', user.id);
           .from('analysis_history')
           .select('*')
           .eq('user_id', user.id);
