@@ -25,7 +25,7 @@ export default function DashboardPage() {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        setUserName(user.user_metadata?.full_name || "Creator");
+        setUserName(user.user_metadata?.full_name || null);
 
         let query = supabase
           .from('analysis_history')
@@ -71,7 +71,7 @@ export default function DashboardPage() {
           <main className="flex-1 overflow-y-auto p-6 lg:p-8 flex items-center justify-center">
             <div className="text-center max-w-md">
               <h1 className="text-4xl font-serif text-white mb-4">
-                Welcome, {userName}!
+                {userName ? `Welcome, ${userName}!` : "Welcome to SignSafe!"}
               </h1>
               <p className="text-white/60 mb-8">
                 You haven&apos;t analyzed any contracts yet. Upload your first brand deal to see the AI in action.

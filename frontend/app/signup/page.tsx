@@ -56,7 +56,6 @@ export default function SignupPage() {
     setErrors({});
 
     try {
-      console.log("Attempting signup with Supabase...");
       const { data, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim(),
         password: formData.password,
