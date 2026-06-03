@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { joinTeam } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 
-export default function JoinTeamPage() {
+function JoinTeamContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -84,5 +84,27 @@ export default function JoinTeamPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function JoinTeamLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: "#08080F" }}>
+      <div className="bg-[#0D0D14] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
+        <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-6">
+          <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+        </div>
+        <h1 className="text-2xl font-serif text-white mb-2">Loading...</h1>
+        <p className="text-white/60">Preparing your invitation.</p>
+      </div>
+    </div>
+  );
+}
+
+export default function JoinTeamPage() {
+  return (
+    <Suspense fallback={<JoinTeamLoading />}>
+      <JoinTeamContent />
+    </Suspense>
   );
 }
