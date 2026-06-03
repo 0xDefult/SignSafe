@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useUploadModal } from "@/lib/upload-context";
 import { supabase } from "@/lib/supabase";
@@ -11,7 +11,7 @@ import { DashboardLayout } from "@/components/signsafe/DashboardLayout";
 import { Navbar } from "@/components/signsafe/Navbar";
 import { ClauseCards } from "@/components/signsafe/ClauseCards";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const searchParams = useSearchParams();
   const contractId = searchParams.get('id');
   const { user } = useUser();
@@ -25,9 +25,6 @@ export default function DashboardPage() {
         if (!supabase || !user) return;
 
         let query = supabase
-          .from('analysis_history')
-          .select('*')
-          .eq('user_id', user.id);
           .from('analysis_history')
           .select('*')
           .eq('user_id', user.id);
@@ -135,5 +132,23 @@ export default function DashboardPage() {
         </main>
       </div>
     </DashboardLayout>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <DashboardLayout>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="animate-pulse text-white/60">Loading...</div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
