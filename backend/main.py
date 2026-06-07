@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routers import analyze, counter, calculator, followup, teams
 from services.auth import get_current_user
@@ -13,14 +14,21 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# GLOBAL ERROR HANDLER - Prevents "Failed to Fetch" by ensuring JSON is always returned
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"CRITICAL ERROR: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal Server Error: {str(exc)}"},
+    )
+
 # CORS — allow frontend
 origins = ["http://localhost:3000"]
 frontend_url = os.getenv("FRONTEND_URL")
 if frontend_url and frontend_url != "*":
     origins.append(frontend_url)
 
-# If we only have localhost or no specific URL, use wildcard and disable credentials
-# because browsers block allow_origins=["*"] when allow_credentials=True
 use_creds = frontend_url is not None and frontend_url != "*"
 
 app.add_middleware(

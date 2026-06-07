@@ -5,7 +5,18 @@ export async function analyzeContract(file: File, followerCount = 50000, niche =
   form.append("file", file);
   form.append("follower_count", String(followerCount));
   form.append("niche", niche);
-  const res = await fetch(`${API}/analyze`, { method: "POST", body: form });
+
+  const token = localStorage.getItem("supabase.auth.token");
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API}/analyze`, {
+    method: "POST",
+    headers: token ? headers : {}, // Only send headers if token exists to avoid "Bearer undefined"
+    body: form
+  });
   if (!res.ok) throw new Error((await res.json()).detail || "Analysis failed");
   return res.json();
 }
