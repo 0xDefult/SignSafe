@@ -36,13 +36,14 @@ Analyze every clause in this contract.
 CRITICAL OUTPUT INSTRUCTIONS:
 1. Return ONLY valid JSON.
 2. Do NOT include any markdown formatting (no ```json blocks).
-3. Ensure all strings are properly escaped.
-4. If the contract is a generic business agreement (not a creator deal), highlight this as a massive red flag in the verdict.
+3. IMPORTANT: Use ONLY single quotes for text inside JSON values, or escape all double quotes with \\".
+4. Ensure no unescaped newlines exist within string values.
+5. If the contract is a generic business agreement (not a creator deal), highlight this as a massive red flag in the verdict.
 
 Return this EXACT structure:
 {{
   "verdict": "DO NOT SIGN",
-  "verdict_reason": "Reason why",
+  "verdict_reason": "Short reason",
   "overall_score": "red",
   "clauses": [
     {{
@@ -51,9 +52,9 @@ Return this EXACT structure:
       "risk": "red",
       "title": "Clause Title",
       "original_text": "Exact text from contract",
-      "plain_english": "What this actually means",
-      "why_bad": "Why this is a problem",
-      "market_standard": "What is actually fair"
+      "plain_english": "Plain meaning",
+      "why_bad": "Why bad",
+      "market_standard": "What is fair"
     }}
   ],
   "estimated_loss_inr": 100000,
@@ -62,12 +63,5 @@ Return this EXACT structure:
   "green_count": 0
 }}
 
-Verdict options: "DO NOT SIGN" (2+ red clauses) | "SIGN WITH CHANGES" (only yellow clauses) | "SAFE TO SIGN" (all green)
-Risk levels: "red" (serious risk) | "yellow" (below standard) | "green" (fair)
-Clause types: exclusivity | content_ownership | payment_terms | revision_limits | termination | usage_rights | deliverables | kill_fee | auto_renewal | other
-
-Be thorough. Analyze EVERY clause. Do not skip anything.
-
-CRITICAL: Keep ALL string values under 150 characters. Be concise.
-Do not write long paragraphs. Short, punchy, direct sentences only.
-The entire JSON response must be complete and valid.
+CRITICAL: Keep ALL string values under 100 characters. Be extremely concise. Use short, punchy sentences.
+The entire JSON response must be one single, valid object.
