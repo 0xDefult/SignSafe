@@ -14,13 +14,19 @@ app = FastAPI(
 )
 
 # CORS — allow frontend
+origins = ["http://localhost:3000"]
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url and frontend_url != "*":
+    origins.append(frontend_url)
+
+# If we only have localhost or no specific URL, use wildcard and disable credentials
+# because browsers block allow_origins=["*"] when allow_credentials=True
+use_creds = frontend_url is not None and frontend_url != "*"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        os.getenv("FRONTEND_URL", "*"),
-    ],
-    allow_credentials=True,
+    allow_origins=origins if use_creds else ["*"],
+    allow_credentials=use_creds,
     allow_methods=["*"],
     allow_headers=["*"],
 )
