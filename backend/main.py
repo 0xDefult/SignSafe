@@ -18,8 +18,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://*.vercel.app",
-        os.getenv("FRONTEND_URL", "")
+        os.getenv("FRONTEND_URL", "*"),
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -27,20 +26,20 @@ app.add_middleware(
 )
 
 # Protected Routes Group
-# All routers included here will require a valid Supabase JWT
-protected_router = FastAPI() # Using a sub-app or just a router
-# To keep it simple and compatible with the existing structure,
-# we'll create a wrapper router that applies the dependency to all its children.
+# Routes in auth_router require a valid Supabase JWT
 from fastapi import APIRouter
 auth_router = APIRouter(dependencies=[Depends(get_current_user)])
 
-auth_router.include_router(analyze.router)
 auth_router.include_router(counter.router)
-auth_router.include_router(calculator.router)
 auth_router.include_router(followup.router)
 auth_router.include_router(teams.router)
 
 app.include_router(auth_router)
+
+# Public Routes
+# These are available to guests
+app.include_router(analyze.router)
+app.include_router(calculator.router)
 
 @app.get("/")
 async def root():
