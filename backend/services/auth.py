@@ -22,3 +22,17 @@ async def get_current_user(auth: HTTPAuthorizationCredentials = Depends(auth_sch
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Authentication error: {str(e)}"
         )
+
+async def get_optional_user(auth: HTTPAuthorizationCredentials = Depends(auth_scheme)):
+    """
+    Tries to validate token. Returns user if valid, otherwise None.
+    Does NOT raise 401.
+    """
+    try:
+        token = auth.credentials
+        res = supabase_client.auth.get_user(token)
+        if res and res.user:
+            return res.user
+    except:
+        pass
+    return None
