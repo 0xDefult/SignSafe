@@ -1,6 +1,8 @@
 import json
 import os
 import re
+import asyncio
+import time
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -18,30 +20,62 @@ def _load_prompt(filename):
     with open(path) as f: return f.read()
 
 def _clean_json(raw):
+    """
+    Robustly cleans AI output to ensure it can be parsed as JSON.
+    Handles markdown blocks, leading/trailing text, and common JSON errors.
+    """
+    # Remove markdown code blocks (```json ... ```)
     c = re.sub(r'```json\s*|```\s*', '', raw).strip()
+
+    # Isolate the JSON object (find the first '{' and the last '}')
     s, e = c.find('{'), c.rfind('}') + 1
-    if s != -1 and e > s: c = c[s:e]
-    return json.loads(c)
+    if s != -1 and e > s:
+        c = c[s:e]
+
+    try:
+        return json.loads(c)
+    except json.JSONDecodeError:
+        # Fallback: Try to fix common LLM mistakes like trailing commas
+        try:
+            # Remove trailing commas before closing brackets/braces
+            c = re.sub(r',\s*([\]}])', r'\1', c)
+            return json.loads(c)
+        except Exception as e:
+            # Provide a more helpful error for debugging
+            raise ValueError(f"AI returned invalid JSON format. Detail: {str(e)}. Snippet: {c[:200]}...")
 
 def _call_gemini(prompt, temperature=0.1):
-    response = client.models.generate_content(
-        model=GEMINI_MODEL, contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=temperature,
-            max_output_tokens=8192,
-            response_mime_type="application/json",
-        )
-    )
-    return response.text
+    """
+    Calls the Gemini API with a retry mechanism for 503 (Overloaded) errors.
+    """
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=temperature,
+                    max_output_tokens=8192,
+                    response_mime_type="application/json",
+                )
+            )
+            return response.text
+        except Exception as e:
+            err_str = str(e).upper()
+            # Retry if we hit 503 (Unavailable/Overloaded)
+            if ("503" in err_str or "UNAVAILABLE" in err_str) and attempt < max_retries - 1:
+                # Exponential backoff: 1s, 2s, 4s
+                time.sleep(2 ** attempt)
+                continue
+            raise e
 
 def _sanitize_input(text: str) -> str:
     """
-    Prevents basic prompt injection by removing common attack patterns
-    and ensuring the text is treated as data.
+    Prevents basic prompt injection by removing common attack patterns.
     """
     if not text:
         return ""
-    # Remove common prompt injection keywords if they appear as commands
     patterns = [
         r"ignore all previous instructions",
         r"disregard the above",
@@ -57,38 +91,45 @@ def _sanitize_input(text: str) -> str:
 
 async def analyze_contract(contract_text, follower_count=50000, niche="lifestyle"):
     template = _load_prompt("analyze_prompt.txt")
-
-    # Sanitize input to prevent prompt injection
     sanitized_text = _sanitize_input(contract_text)
 
-    # Handle long contracts (Gemini 2.5 Flash supports massive context windows)
-    # Increase limit to 1,000,000 characters (~250k tokens) to protect API but allow large legal docs
+    # Handle very long contracts
     MAX_CHARACTERS = 1000000
     if len(sanitized_text) > MAX_CHARACTERS:
-        sanitized_text = sanitized_text[:MAX_CHARACTERS] + "\n\n[CRITICAL: Document truncated due to extreme length. Analysis based on first 1M characters.]"
+        sanitized_text = sanitized_text[:MAX_CHARACTERS] + "\n\n[TRUNCATED]"
 
     prompt = template.format(contract_text=sanitized_text, follower_count=follower_count, niche=niche)
+
+    # Use run_in_executor for the synchronous API call to avoid blocking the FastAPI event loop
+    loop = asyncio.get_event_loop()
     try:
-        return AnalysisResponse(**_clean_json(_call_gemini(prompt, 0.05)))
+        raw_res = await loop.run_in_executor(None, _call_gemini, prompt, 0.05)
+        return AnalysisResponse(**_clean_json(raw_res))
     except Exception as e:
         raise ValueError(f"Analysis failed: {e}")
 
 async def generate_counter_offer(clause_type, original_text, context=""):
     template = _load_prompt("counter_prompt.txt")
     prompt = template.format(clause_type=clause_type, original_text=original_text, context=context)
+
+    loop = asyncio.get_event_loop()
     try:
-        return CounterOfferResponse(**_clean_json(_call_gemini(prompt, 0.3)))
+        raw_res = await loop.run_in_executor(None, _call_gemini, prompt, 0.3)
+        return CounterOfferResponse(**_clean_json(raw_res))
     except Exception as e:
         raise ValueError(f"Counter-offer failed: {e}")
 
 async def answer_followup(question, context):
     template = _load_prompt("followup_prompt.txt")
     prompt = template.format(context=context, question=question)
+
+    loop = asyncio.get_event_loop()
     try:
-        r = client.models.generate_content(
+        # Follow-up is not JSON, so we call it directly without _clean_json
+        r = await loop.run_in_executor(None, lambda: client.models.generate_content(
             model=GEMINI_MODEL, contents=prompt,
             config=types.GenerateContentConfig(temperature=0.4, max_output_tokens=512)
-        )
+        ))
         return r.text
     except Exception as e:
         raise ValueError(f"Followup failed: {e}")
