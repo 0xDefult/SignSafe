@@ -22,33 +22,37 @@ function DashboardContent() {
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
-        if (!supabase || !user) return;
+        // 1. Try to fetch from Supabase if user is logged in
+        if (supabase && user) {
+          let query = supabase
+            .from('analysis_history')
+            .select('*')
+            .eq('user_id', user.id);
 
-        let query = supabase
-          .from('analysis_history')
-          .select('*')
-          .eq('user_id', user.id);
+          if (contractId) {
+            query = query.eq('id', contractId);
+          } else {
+            query = query.order('created_at', { ascending: false }).limit(1);
+          }
 
-        if (contractId) {
-          query = query.eq('id', contractId);
-        } else {
-          query = query.order('created_at', { ascending: false }).limit(1);
+          const { data, error } = await query.single();
+
+          if (!error && data) {
+            setAnalysis(data.analysis_data);
+            setFilename(data.filename);
+            return; // Found in DB, we're done
+          }
         }
 
-        const { data, error } = await query.single();
-
-        if (error || !data) {
-          const sessionData = sessionStorage.getItem("signsafe_analysis");
-          if (sessionData) {
-            setAnalysis(JSON.parse(sessionData));
-            setFilename(sessionStorage.getItem("signsafe_filename") || "Contract");
-          }
-        } else {
-          setAnalysis(data.analysis_data);
-          setFilename(data.filename);
+        // 2. Fallback to sessionStorage for both Guests and logged-in users
+        const sessionData = sessionStorage.getItem("signsafe_analysis");
+        if (sessionData) {
+          setAnalysis(JSON.parse(sessionData));
+          setFilename(sessionStorage.getItem("signsafe_filename") || "Contract");
         }
       } catch (e) {
         console.error("Error fetching analysis:", e);
+        // Final fallback attempt
         const sessionData = sessionStorage.getItem("signsafe_analysis");
         if (sessionData) {
           setAnalysis(JSON.parse(sessionData));
@@ -58,7 +62,7 @@ function DashboardContent() {
     };
 
     fetchAnalysis();
-  }, [contractId]);
+  }, [contractId, user]);
 
   if (!analysis) {
     return (

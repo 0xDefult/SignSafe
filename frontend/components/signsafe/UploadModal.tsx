@@ -19,6 +19,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [teams, setTeams] = useState<any[]>([]);
@@ -88,6 +89,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
     setUploading(true);
     setError(null);
+    setSuccess(false);
     setProgress(0);
 
     const interval = setInterval(() => {
@@ -120,10 +122,13 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         console.error("Error saving analysis to Supabase:", saveError);
       }
 
+      setUploading(false);
+      setSuccess(true);
+
       setTimeout(() => {
         router.push("/dashboard");
         onClose();
-      }, 400);
+      }, 2000);
     } catch (err: any) {
       clearInterval(interval);
       setError(err.message || "Analysis failed. Please try again.");
@@ -155,108 +160,122 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
-            {error}
+        {success ? (
+          <div className="py-12 text-center flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center animate-bounce">
+              <CheckCircle className="w-10 h-10 text-emerald-400" />
+            </div>
+            <div>
+              <h3 className="text-xl font-medium text-white">Analysis Complete!</h3>
+              <p className="text-white/60 text-sm mt-2">Redirecting you to your dashboard...</p>
+            </div>
           </div>
-        )}
-
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-            isDragging
-              ? "border-violet-500 bg-violet-500/10"
-              : "border-white/20 hover:border-white/40"
-          }`}
-        >
-          <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
-            <Upload className="w-8 h-8 text-violet-400" />
-          </div>
-          <p className="text-white mb-2">Drag and drop your contract here</p>
-          <p className="text-white/40 text-sm mb-4">Supports PDF, DOCX, DOC, TXT (max 50MB)</p>
-          <label className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm cursor-pointer transition-colors">
-            <span>Browse Files</span>
-            <input
-              type="file"
-              className="hidden"
-              multiple
-              accept=".pdf,.docx,.doc,.txt"
-              onChange={handleFileSelect}
-            />
-          </label>
-        </div>
-
-        {files.length > 0 && (
-          <div className="mt-4 space-y-2">
-            {files.map((file, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between bg-white/5 rounded-lg p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <FileText className="w-5 h-5 text-violet-400" />
-                  <div>
-                    <p className="text-white text-sm">{file.name}</p>
-                    <p className="text-white/40 text-xs">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => removeFile(index)}
-                  className="p-1 hover:bg-white/10 rounded transition-colors"
-                >
-                  <X className="w-4 h-4 text-white/40" />
-                </button>
+        ) : (
+          <>
+            {error && (
+              <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
+                {error}
               </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-6">
-          <label className="flex items-center gap-2 text-white/60 text-sm mb-2">
-            <Users className="w-4 h-4" />
-            Upload to
-          </label>
-          <select
-            value={selectedTeamId || ""}
-            onChange={(e) => setSelectedTeamId(e.target.value || null)}
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors"
-          >
-            <option value="">Personal Space</option>
-            {teams.map(team => (
-              <option key={team.id} value={team.id}>{team.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 mt-6">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-white/60 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleUpload}
-            disabled={files.length === 0 || uploading}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-lg text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {uploading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="w-4 h-4" />
-                Upload & Analyze
-              </>
             )}
-          </button>
-        </div>
+
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                isDragging
+                  ? "border-violet-500 bg-violet-500/10"
+                  : "border-white/20 hover:border-white/40"
+              }`}
+            >
+              <div className="w-16 h-16 rounded-full bg-violet-500/20 flex items-center justify-center mx-auto mb-4">
+                <Upload className="w-8 h-8 text-violet-400" />
+              </div>
+              <p className="text-white mb-2">Drag and drop your contract here</p>
+              <p className="text-white/40 text-sm mb-4">Supports PDF, DOCX, DOC, TXT (max 50MB)</p>
+              <label className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm cursor-pointer transition-colors">
+                <span>Browse Files</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  multiple
+                  accept=".pdf,.docx,.doc,.txt"
+                  onChange={handleFileSelect}
+                />
+              </label>
+            </div>
+
+            {files.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {files.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-white/5 rounded-lg p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-violet-400" />
+                      <div>
+                        <p className="text-white text-sm">{file.name}</p>
+                        <p className="text-white/40 text-xs">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeFile(index)}
+                      className="p-1 hover:bg-white/10 rounded transition-colors"
+                    >
+                      <X className="w-4 h-4 text-white/40" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6">
+              <label className="flex items-center gap-2 text-white/60 text-sm mb-2">
+                <Users className="w-4 h-4" />
+                Upload to
+              </label>
+              <select
+                value={selectedTeamId || ""}
+                onChange={(e) => setSelectedTeamId(e.target.value || null)}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-violet-500 transition-colors"
+              >
+                <option value="">Personal Space</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>{team.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 mt-6">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-white/60 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                disabled={files.length === 0 || uploading}
+                className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-lg text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {uploading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4" />
+                    Upload & Analyze
+                  </>
+                )}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
