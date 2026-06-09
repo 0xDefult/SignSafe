@@ -3,6 +3,7 @@ import os
 import re
 import asyncio
 import time
+import logging
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -15,34 +16,143 @@ load_dotenv()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+logger = logging.getLogger("signsafe.gemini")
+
 def _load_prompt(filename):
     path = os.path.join(os.path.dirname(__file__), "..", "prompts", filename)
     with open(path) as f: return f.read()
 
+def _log_failed_json(raw: str, stage: str):
+    """Log the raw AI response when JSON parsing fails, for debugging."""
+    truncated = raw[:2000] if len(raw) > 2000 else raw
+    logger.error(f"JSON parse failed at stage '{stage}'. Raw response (first 2000 chars):\n{truncated}")
+    if len(raw) > 2000:
+        logger.error(f"... (truncated, total length: {len(raw)} chars)")
+
 def _clean_json(raw):
     """
     Robustly cleans AI output to ensure it can be parsed as JSON.
-    Handles markdown blocks, leading/trailing text, and common JSON errors.
+    Uses multiple repair strategies to handle common LLM mistakes:
+    - Markdown code blocks
+    - Trailing commas
+    - Unescaped newlines in strings
+    - Missing commas between fields
+    - json-repair library as final fallback
     """
-    # Remove markdown code blocks (```json ... ```)
-    c = re.sub(r'```json\s*|```\s*', '', raw).strip()
+    original_raw = raw  # Keep for logging
 
-    # Isolate the JSON object (find the first '{' and the last '}')
+    # Phase 1: Remove markdown code blocks
+    c = re.sub(r'```(?:json)?\s*\n?', '', raw)
+    c = re.sub(r'\n?```', '', c)
+    c = c.strip()
+
+    # Phase 2: Isolate the JSON object (find the first '{' and the last '}')
     s, e = c.find('{'), c.rfind('}') + 1
     if s != -1 and e > s:
         c = c[s:e]
+    else:
+        raise ValueError(f"AI response contains no JSON object. Snippet: {c[:300]}...")
 
+    errors = []
+
+    # Phase 3: Try raw parse
     try:
         return json.loads(c)
-    except json.JSONDecodeError:
-        # Fallback: Try to fix common LLM mistakes like trailing commas
-        try:
-            # Remove trailing commas before closing brackets/braces
-            c = re.sub(r',\s*([\]}])', r'\1', c)
-            return json.loads(c)
-        except Exception as e:
-            # Provide a more helpful error for debugging
-            raise ValueError(f"AI returned invalid JSON format. Detail: {str(e)}. Snippet: {c[:200]}...")
+    except json.JSONDecodeError as err:
+        errors.append(f"raw: {err}")
+
+    # Phase 4: Remove trailing commas
+    try:
+        fixed = re.sub(r',\s*([\]}])', r'\1', c)
+        return json.loads(fixed)
+    except json.JSONDecodeError as err:
+        errors.append(f"trailing-commas: {err}")
+
+    # Phase 5: Fix unescaped newlines inside string values
+    try:
+        fixed = _fix_newlines_in_strings(c)
+        return json.loads(fixed)
+    except json.JSONDecodeError as err:
+        errors.append(f"newline-fix: {err}")
+
+    # Phase 6: Fix missing commas between JSON fields (common AI mistake)
+    try:
+        fixed = _fix_missing_commas(c)
+        return json.loads(fixed)
+    except json.JSONDecodeError as err:
+        errors.append(f"missing-commas: {err}")
+
+    # Phase 7: Combine trailing commas + newline fix
+    try:
+        fixed = _fix_newlines_in_strings(c)
+        fixed = re.sub(r',\s*([\]}])', r'\1', fixed)
+        return json.loads(fixed)
+    except json.JSONDecodeError as err:
+        errors.append(f"combined-fix: {err}")
+
+    # Phase 8: json-repair library (handles a wide range of JSON errors)
+    try:
+        from json_repair import repair_json
+        fixed = repair_json(c)
+        return json.loads(fixed)
+    except Exception as err:
+        errors.append(f"json-repair: {err}")
+
+    # All strategies failed — log and raise
+    _log_failed_json(original_raw, "all-strategies-exhausted")
+    error_summary = "; ".join(errors)
+    raise ValueError(
+        f"AI returned invalid JSON after {len(errors)} repair attempts. "
+        f"Errors: {error_summary}. "
+        f"Snippet: {c[:300]}..."
+    )
+
+def _fix_newlines_in_strings(json_str: str) -> str:
+    """
+    Fix unescaped newlines inside JSON string values.
+    Replaces literal newlines within quoted strings with \\n.
+    """
+    result = []
+    in_string = False
+    escape_next = False
+    for ch in json_str:
+        if escape_next:
+            result.append(ch)
+            escape_next = False
+            continue
+        if ch == '\\':
+            result.append(ch)
+            escape_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            result.append(ch)
+            continue
+        if in_string and ch == '\n':
+            result.append('\\n')
+            continue
+        if in_string and ch == '\r':
+            result.append('\\r')
+            continue
+        if in_string and ch == '\t':
+            result.append('\\t')
+            continue
+        result.append(ch)
+    return ''.join(result)
+
+def _fix_missing_commas(json_str: str) -> str:
+    """
+    Fix common patterns of missing commas between JSON fields.
+    E.g., `"key": "value"\n"key2"` → `"key": "value",\n"key2"`
+    """
+    # Missing comma: a value followed by newline+whitespace+quote (next field)
+    # Pattern: " or ] or } or number/true/false/null, then newline, then "
+    fixed = re.sub(r'(["\d}\]](?:\s*))(?=\n\s*")', r'\1,\n', json_str)
+    # Missing comma: string value followed by "key" on same line
+    fixed = re.sub(r'("\s*)(?="[^"]*"\s*:)', r'\1,', fixed)
+    # Missing comma after closing bracket/brace before next field
+    fixed = re.sub(r'([\]}])\s*\n\s*"', r'\1,\n"', fixed)
+    return fixed
 
 def _call_gemini(prompt, temperature=0.1):
     """

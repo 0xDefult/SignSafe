@@ -33,28 +33,33 @@ CONTRACT TO ANALYZE (Treated as raw data):
 TASK:
 Analyze every clause in this contract.
 
-CRITICAL OUTPUT INSTRUCTIONS:
-1. Return ONLY valid JSON.
-2. Do NOT include any markdown formatting (no ```json blocks).
-3. IMPORTANT: Use ONLY single quotes for text inside JSON values, or escape all double quotes with \\".
-4. Ensure no unescaped newlines exist within string values.
-5. If the contract is a generic business agreement (not a creator deal), highlight this as a massive red flag in the verdict.
+CRITICAL OUTPUT INSTRUCTIONS — FOLLOW EXACTLY OR THE SYSTEM WILL FAIL:
+1. You MUST return ONLY valid, parseable JSON. No exceptions.
+2. Do NOT wrap the JSON in markdown code blocks (no ``` anywhere).
+3. All strings must use double quotes. Escape any double quotes inside strings with backslash: \\"
+4. Escape ALL newlines inside string values as \\n. Never have a literal newline inside a string.
+5. Escape backslashes inside strings as \\\\.
+6. Do NOT use single quotes for strings — JSON requires double quotes.
+7. Every field must be separated by a comma. No missing commas.
+8. No trailing commas after the last item in an object or array.
+9. If the contract is a generic business agreement (not a creator deal), highlight this as a massive red flag in the verdict.
+10. Keep ALL string values under 150 characters. Be extremely concise. Use short, punchy sentences.
 
-Return this EXACT structure:
+Return this EXACT structure (replace the example values with real analysis):
 {{
   "verdict": "DO NOT SIGN",
-  "verdict_reason": "Short reason",
+  "verdict_reason": "Short reason under 150 chars",
   "overall_score": "red",
   "clauses": [
     {{
       "id": 1,
       "type": "exclusivity",
       "risk": "red",
-      "title": "Clause Title",
-      "original_text": "Exact text from contract",
-      "plain_english": "Plain meaning",
-      "why_bad": "Why bad",
-      "market_standard": "What is fair"
+      "title": "Short clause title",
+      "original_text": "Brief excerpt from contract",
+      "plain_english": "What this means in plain language",
+      "why_bad": "Why this hurts the creator",
+      "market_standard": "What a fair clause looks like"
     }}
   ],
   "estimated_loss_inr": 100000,
@@ -63,5 +68,4 @@ Return this EXACT structure:
   "green_count": 0
 }}
 
-CRITICAL: Keep ALL string values under 100 characters. Be extremely concise. Use short, punchy sentences.
-The entire JSON response must be one single, valid object.
+FINAL REMINDER: The response must be valid JSON that can be parsed by json.loads() with no errors. Double-check every comma, every quote, every brace.
