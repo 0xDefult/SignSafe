@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional
 from enum import Enum
 from datetime import datetime
@@ -82,12 +82,30 @@ class Clause(BaseModel):
 class AnalysisResponse(BaseModel):
     verdict: str  # "DO NOT SIGN" | "SIGN WITH CHANGES" | "SAFE TO SIGN"
     verdict_reason: str
-    overall_score: RiskLevel
+    overall_score: RiskLevel = RiskLevel.GREEN  # default: overridden by safety net in gemini_service
     clauses: List[Clause]
-    estimated_loss_inr: int
-    red_count: int
-    yellow_count: int
-    green_count: int
+    estimated_loss_inr: int = 0
+    red_count: int = 0
+    yellow_count: int = 0
+    green_count: int = 0
+
+    @model_validator(mode='after')
+    def compute_counts(self):
+        """Auto-compute risk counts and overall_score from clauses if the AI omitted them."""
+        if self.clauses:
+            # Compute counts if all are still at their default (0)
+            if not self.red_count and not self.yellow_count and not self.green_count:
+                self.red_count = sum(1 for c in self.clauses if c.risk == RiskLevel.RED)
+                self.yellow_count = sum(1 for c in self.clauses if c.risk == RiskLevel.YELLOW)
+                self.green_count = sum(1 for c in self.clauses if c.risk == RiskLevel.GREEN)
+            # Compute overall_score if it looks like AI didn't provide a meaningful one
+            # (still at default GREEN but counts say otherwise)
+            if self.overall_score == RiskLevel.GREEN and (self.red_count > 0 or self.yellow_count > 0):
+                if self.red_count >= 2 or (self.red_count >= 1 and self.yellow_count >= 3):
+                    self.overall_score = RiskLevel.RED
+                elif self.yellow_count >= 2:
+                    self.overall_score = RiskLevel.YELLOW
+        return self
 
 class CounterOfferRequest(BaseModel):
     clause_id: int
@@ -96,9 +114,18 @@ class CounterOfferRequest(BaseModel):
     context: Optional[str] = None
 
 class CounterOfferResponse(BaseModel):
-    rewritten_clause: str
-    negotiation_script: str
-    key_changes: List[str]
+    rewritten_clause: str = ""
+    negotiation_script: str = ""
+    key_changes: List[str] = []
+
+    @model_validator(mode='after')
+    def ensure_not_empty(self):
+        """Catch cases where the AI returned nothing useful."""
+        if not self.rewritten_clause and not self.negotiation_script:
+            self.rewritten_clause = "Unable to generate a counter-offer. Please try again."
+            self.negotiation_script = "We encountered an issue generating your negotiation script. Please retry or contact support."
+            self.key_changes = ["AI generation incomplete — please retry"]
+        return self
 
 class CalculatorRequest(BaseModel):
     follower_count: int

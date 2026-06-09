@@ -214,7 +214,28 @@ async def analyze_contract(contract_text, follower_count=50000, niche="lifestyle
     loop = asyncio.get_event_loop()
     try:
         raw_res = await loop.run_in_executor(None, _call_gemini, prompt, 0.05)
-        return AnalysisResponse(**_clean_json(raw_res))
+        data = _clean_json(raw_res)
+
+        # Safety: ensure count fields exist (AI sometimes omits them)
+        clauses = data.get("clauses", [])
+        if "estimated_loss_inr" not in data:
+            data["estimated_loss_inr"] = 0
+        if "red_count" not in data:
+            data["red_count"] = sum(1 for c in clauses if c.get("risk") == "red")
+        if "yellow_count" not in data:
+            data["yellow_count"] = sum(1 for c in clauses if c.get("risk") == "yellow")
+        if "green_count" not in data:
+            data["green_count"] = sum(1 for c in clauses if c.get("risk") == "green")
+        if "overall_score" not in data:
+            rc = data.get("red_count", 0)
+            if rc >= 2 or (rc >= 1 and data.get("yellow_count", 0) >= 3):
+                data["overall_score"] = "red"
+            elif data.get("yellow_count", 0) >= 2:
+                data["overall_score"] = "yellow"
+            else:
+                data["overall_score"] = "green"
+
+        return AnalysisResponse(**data)
     except Exception as e:
         raise ValueError(f"Analysis failed: {e}")
 
@@ -225,7 +246,17 @@ async def generate_counter_offer(clause_type, original_text, context=""):
     loop = asyncio.get_event_loop()
     try:
         raw_res = await loop.run_in_executor(None, _call_gemini, prompt, 0.3)
-        return CounterOfferResponse(**_clean_json(raw_res))
+        data = _clean_json(raw_res)
+
+        # Safety: ensure required fields exist (AI sometimes omits them)
+        if "rewritten_clause" not in data:
+            data["rewritten_clause"] = ""
+        if "negotiation_script" not in data:
+            data["negotiation_script"] = ""
+        if "key_changes" not in data:
+            data["key_changes"] = []
+
+        return CounterOfferResponse(**data)
     except Exception as e:
         raise ValueError(f"Counter-offer failed: {e}")
 
