@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { X, Upload, FileText, CheckCircle, Users } from "lucide-react";
 import { analyzeContract } from "@/lib/api";
-import { useRouter } from "next/navigation";
 import PlasmaOrb from "./PlasmaOrb";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
@@ -14,7 +13,6 @@ interface UploadModalProps {
 }
 
 export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
-  const router = useRouter();
   const { user } = useUser();
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -105,30 +103,38 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       sessionStorage.setItem("signsafe_analysis", JSON.stringify(result));
       sessionStorage.setItem("signsafe_filename", file.name);
 
-      try {
-        if (!supabase) throw new Error("Supabase not initialized");
-        if (user) {
-          await supabase.from('analysis_history').insert({
+      // Save to Supabase only if user is authenticated
+      if (supabase && user) {
+        try {
+          const insertData: Record<string, any> = {
             user_id: user.id,
-            team_id: selectedTeamId,
             filename: file.name,
             verdict: result.verdict,
             overall_score: result.overall_score,
             estimated_loss_inr: result.estimated_loss_inr,
             analysis_data: result,
-          });
+          };
+          // Only include team_id if a team was selected
+          if (selectedTeamId) {
+            insertData.team_id = selectedTeamId;
+          }
+          const { error: insertError } = await supabase.from('analysis_history').insert(insertData);
+          if (insertError) {
+            console.error("Supabase insert error:", insertError.message, insertError.details, insertError.hint);
+          }
+        } catch (saveError: any) {
+          console.error("Error saving analysis to Supabase:", saveError?.message || saveError);
         }
-      } catch (saveError) {
-        console.error("Error saving analysis to Supabase:", saveError);
       }
 
       setUploading(false);
       setSuccess(true);
 
+      // Notify dashboard to reload from sessionStorage, then close modal
       setTimeout(() => {
-        router.push("/dashboard");
+        window.dispatchEvent(new CustomEvent('analysis-updated'));
         onClose();
-      }, 2000);
+      }, 800);
     } catch (err: any) {
       clearInterval(interval);
       setError(err.message || "Analysis failed. Please try again.");

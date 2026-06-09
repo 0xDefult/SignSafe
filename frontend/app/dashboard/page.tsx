@@ -19,49 +19,58 @@ function DashboardContent() {
   const [filename, setFilename] = useState("");
   const userName = user?.user_metadata?.full_name || null;
 
-  useEffect(() => {
-    const fetchAnalysis = async () => {
-      try {
-        // 1. Try to fetch from Supabase if user is logged in
-        if (supabase && user) {
-          let query = supabase
-            .from('analysis_history')
-            .select('*')
-            .eq('user_id', user.id);
+  const loadAnalysis = async () => {
+    try {
+      // 1. Try to fetch from Supabase if user is logged in
+      if (supabase && user) {
+        let query = supabase
+          .from('analysis_history')
+          .select('*')
+          .eq('user_id', user.id);
 
-          if (contractId) {
-            query = query.eq('id', contractId);
-          } else {
-            query = query.order('created_at', { ascending: false }).limit(1);
-          }
-
-          const { data, error } = await query.single();
-
-          if (!error && data) {
-            setAnalysis(data.analysis_data);
-            setFilename(data.filename);
-            return; // Found in DB, we're done
-          }
+        if (contractId) {
+          query = query.eq('id', contractId);
+        } else {
+          query = query.order('created_at', { ascending: false }).limit(1);
         }
 
-        // 2. Fallback to sessionStorage for both Guests and logged-in users
-        const sessionData = sessionStorage.getItem("signsafe_analysis");
-        if (sessionData) {
-          setAnalysis(JSON.parse(sessionData));
-          setFilename(sessionStorage.getItem("signsafe_filename") || "Contract");
-        }
-      } catch (e) {
-        console.error("Error fetching analysis:", e);
-        // Final fallback attempt
-        const sessionData = sessionStorage.getItem("signsafe_analysis");
-        if (sessionData) {
-          setAnalysis(JSON.parse(sessionData));
-          setFilename(sessionStorage.getItem("signsafe_filename") || "Contract");
+        const { data, error } = await query.single();
+
+        if (!error && data) {
+          setAnalysis(data.analysis_data);
+          setFilename(data.filename);
+          return; // Found in DB, we're done
         }
       }
-    };
 
-    fetchAnalysis();
+      // 2. Fallback to sessionStorage for both Guests and logged-in users
+      const sessionData = sessionStorage.getItem("signsafe_analysis");
+      if (sessionData) {
+        setAnalysis(JSON.parse(sessionData));
+        setFilename(sessionStorage.getItem("signsafe_filename") || "Contract");
+      }
+    } catch (e) {
+      console.error("Error fetching analysis:", e);
+      // Final fallback attempt
+      const sessionData = sessionStorage.getItem("signsafe_analysis");
+      if (sessionData) {
+        setAnalysis(JSON.parse(sessionData));
+        setFilename(sessionStorage.getItem("signsafe_filename") || "Contract");
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadAnalysis();
+  }, [contractId, user]);
+
+  // Listen for new analysis after upload (avoids needing page refresh)
+  useEffect(() => {
+    const handleAnalysisUpdated = () => {
+      loadAnalysis();
+    };
+    window.addEventListener('analysis-updated', handleAnalysisUpdated);
+    return () => window.removeEventListener('analysis-updated', handleAnalysisUpdated);
   }, [contractId, user]);
 
   if (!analysis) {
