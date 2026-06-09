@@ -5,8 +5,9 @@ import type { NextRequest } from "next/server";
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
-  // Protect all dashboard-related routes
-  const protectedRoutes = ["/dashboard", "/history", "/contracts", "/analytics", "/settings", "/team", "/support"];
+  // Protect authenticated-only routes
+  // /dashboard is excluded — guests can upload and see results via sessionStorage
+  const protectedRoutes = ["/history", "/contracts", "/analytics", "/settings", "/team", "/support"];
   const isProtected = protectedRoutes.some(r => req.nextUrl.pathname.startsWith(r));
 
   if (!isProtected) return res;
