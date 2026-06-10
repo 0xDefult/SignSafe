@@ -1,3 +1,5 @@
+import { supabase } from '@/lib/supabase';
+
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function analyzeContract(file: File, followerCount = 50000, niche = "lifestyle") {
@@ -6,25 +8,37 @@ export async function analyzeContract(file: File, followerCount = 50000, niche =
   form.append("follower_count", String(followerCount));
   form.append("niche", niche);
 
-  const token = localStorage.getItem("supabase.auth.token");
+  // Get the actual Supabase session token (not the non-existent localStorage key)
   const headers: Record<string, string> = {};
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  if (supabase) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
   }
 
   const res = await fetch(`${API}/analyze`, {
     method: "POST",
-    headers: token ? headers : {}, // Only send headers if token exists to avoid "Bearer undefined"
+    headers,
     body: form
   });
   if (!res.ok) throw new Error((await res.json()).detail || "Analysis failed");
   return res.json();
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return { "Authorization": `Bearer ${session.access_token}` };
+  }
+  return {};
+}
+
 export async function getCounterOffer(clauseId: number, originalText: string, clauseType: string) {
   const res = await fetch(`${API}/counter-offer`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({ clause_id: clauseId, original_text: originalText, clause_type: clauseType })
   });
   if (!res.ok) throw new Error("Counter-offer failed");
@@ -47,7 +61,7 @@ export async function calculateDeal(params: {
 export async function askFollowUp(question: string, summary: string, clauses: any[]) {
   const res = await fetch(`${API}/followup`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
     body: JSON.stringify({ question, contract_summary: summary, clauses: clauses.slice(0, 5) })
   });
   if (!res.ok) throw new Error("Followup failed");
