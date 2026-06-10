@@ -7,6 +7,8 @@ import PlasmaOrb from "./PlasmaOrb";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
 
+const GUEST_MAX_ANALYSES = 7; // auto-clear guest data after this many uploads
+
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -99,6 +101,19 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       const result = await analyzeContract(file, 50000, "lifestyle");
       clearInterval(interval);
       setProgress(100);
+
+      // Guest mode: track analysis count and auto-clean after reaching the limit
+      if (!user) {
+        const guestCount = parseInt(sessionStorage.getItem("signsafe_guest_count") || "0", 10);
+        if (guestCount >= GUEST_MAX_ANALYSES - 1) {
+          // Limit reached — wipe all guest data before saving the new analysis
+          sessionStorage.removeItem("signsafe_analysis");
+          sessionStorage.removeItem("signsafe_filename");
+          sessionStorage.setItem("signsafe_guest_count", "0");
+        } else {
+          sessionStorage.setItem("signsafe_guest_count", String(guestCount + 1));
+        }
+      }
 
       sessionStorage.setItem("signsafe_analysis", JSON.stringify(result));
       sessionStorage.setItem("signsafe_filename", file.name);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FileText, Search, Filter, MoreVertical, CheckCircle, AlertTriangle, Clock } from "lucide-react";
 import { Sidebar } from "@/components/signsafe/Sidebar";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
 import Link from "next/link";
 
 const statusIcon = (status: string) => {
@@ -18,15 +19,20 @@ const statusIcon = (status: string) => {
 };
 
 export default function ContractsPage() {
+  const { user, loading: authLoading } = useUser();
   const [contracts, setContracts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for auth to initialise before attempting fetch
+    if (authLoading) return;
+
     const fetchContracts = async () => {
       try {
-        if (!supabase) return;
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!supabase || !user) {
+          setLoading(false);
+          return;
+        }
 
         const { data, error } = await supabase
           .from('analysis_history')
@@ -36,7 +42,7 @@ export default function ContractsPage() {
 
         if (error) throw error;
 
-        const mapped = data.map(c => ({
+        const mapped = (data || []).map(c => ({
           id: c.id,
           name: c.filename,
           project: "General",
@@ -54,9 +60,9 @@ export default function ContractsPage() {
       }
     };
     fetchContracts();
-  }, []);
+  }, [user, authLoading]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex" style={{ background: "#08080F" }}>
         <Sidebar />
@@ -66,6 +72,7 @@ export default function ContractsPage() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen flex" style={{ background: "#08080F" }}>
       <Sidebar />
@@ -91,52 +98,62 @@ export default function ContractsPage() {
         </div>
       </div>
 
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-white/10">
-              <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Contract Name</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Project</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Status</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Risk Level</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Pages</th>
-              <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Date</th>
-              <th className="px-6 py-4"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {contracts.map((contract) => (
-              <tr key={contract.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
-                <td className="px-6 py-4">
-                  <Link href={`/dashboard?id=${contract.id}`} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-violet-400" />
-                    </div>
-                    <span className="text-white font-medium">{contract.name}</span>
-                  </Link>
-                </td>
-                <td className="px-6 py-4 text-white/60">{contract.project}</td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    {statusIcon(contract.status)}
-                    <span className="text-white/80">{contract.status}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={contract.riskColor}>{contract.risk}</span>
-                </td>
-                <td className="px-6 py-4 text-white/60">{contract.pages}</td>
-                <td className="px-6 py-4 text-white/60">{contract.date}</td>
-                <td className="px-6 py-4">
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <MoreVertical className="w-4 h-4 text-white/40" />
-                  </button>
-                </td>
+      {contracts.length === 0 ? (
+        <div className="text-center py-20">
+          <FileText className="w-12 h-12 text-white/20 mx-auto mb-4" />
+          <p className="text-white/60 text-lg mb-2">No contracts yet</p>
+          <p className="text-white/40 text-sm">
+            {user ? "Upload a contract from the Dashboard to see it here." : "Sign in to view your contracts."}
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Contract Name</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Project</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Status</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Risk Level</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Pages</th>
+                <th className="text-left px-6 py-4 text-sm font-medium text-white/60">Date</th>
+                <th className="px-6 py-4"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {contracts.map((contract) => (
+                <tr key={contract.id} className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer">
+                  <td className="px-6 py-4">
+                    <Link href={`/dashboard?id=${contract.id}`} className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-violet-500/20 flex items-center justify-center">
+                        <FileText className="w-5 h-5 text-violet-400" />
+                      </div>
+                      <span className="text-white font-medium">{contract.name}</span>
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 text-white/60">{contract.project}</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {statusIcon(contract.status)}
+                      <span className="text-white/80">{contract.status}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={contract.riskColor}>{contract.risk}</span>
+                  </td>
+                  <td className="px-6 py-4 text-white/60">{contract.pages}</td>
+                  <td className="px-6 py-4 text-white/60">{contract.date}</td>
+                  <td className="px-6 py-4">
+                    <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <MoreVertical className="w-4 h-4 text-white/40" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       </div>
     </div>
   );

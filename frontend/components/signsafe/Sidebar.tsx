@@ -34,6 +34,11 @@ export function Sidebar() {
   const { user } = useUser()
 
   const handleLogout = async () => {
+    // Clear guest session data on logout (also cleans up for authenticated users)
+    sessionStorage.removeItem("signsafe_analysis");
+    sessionStorage.removeItem("signsafe_filename");
+    sessionStorage.removeItem("signsafe_guest_count");
+
     if (supabase) {
       await supabase.auth.signOut();
     }

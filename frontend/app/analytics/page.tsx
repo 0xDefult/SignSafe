@@ -4,17 +4,23 @@ import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, FileText, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { Sidebar } from "@/components/signsafe/Sidebar";
 import { supabase } from "@/lib/supabase";
+import { useUser } from "@/context/UserContext";
 
 export default function AnalyticsPage() {
+  const { user, loading: authLoading } = useUser();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for auth to initialise before attempting fetch
+    if (authLoading) return;
+
     const fetchAnalytics = async () => {
       try {
-        if (!supabase) return;
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        if (!supabase || !user) {
+          setLoading(false);
+          return;
+        }
 
         const { data: contracts, error } = await supabase
           .from('analysis_history')
@@ -24,10 +30,10 @@ export default function AnalyticsPage() {
 
         if (error) throw error;
 
-        const total = contracts.length;
-        const red = contracts.filter(c => c.overall_score === 'red').length;
-        const yellow = contracts.filter(c => c.overall_score === 'yellow').length;
-        const green = contracts.filter(c => c.overall_score === 'green').length;
+        const total = (contracts || []).length;
+        const red = (contracts || []).filter(c => c.overall_score === 'red').length;
+        const yellow = (contracts || []).filter(c => c.overall_score === 'yellow').length;
+        const green = (contracts || []).filter(c => c.overall_score === 'green').length;
 
         const avgScore = total === 0 ? 0 :
           Math.round(((red * 80) + (yellow * 50) + (green * 20)) / total);
@@ -44,7 +50,7 @@ export default function AnalyticsPage() {
             { label: "Medium Risk", count: yellow, percentage: total === 0 ? 0 : Math.round((yellow / total) * 100), color: "bg-yellow-500" },
             { label: "High Risk", count: red, percentage: total === 0 ? 0 : Math.round((red / total) * 100), color: "bg-red-500" },
           ],
-          recent: contracts.slice(0, 5).map(c => ({
+          recent: (contracts || []).slice(0, 5).map(c => ({
             action: "Contract analyzed",
             contract: c.filename,
             time: new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -58,9 +64,9 @@ export default function AnalyticsPage() {
       }
     };
     fetchAnalytics();
-  }, []);
+  }, [user, authLoading]);
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex" style={{ background: "#08080F" }}>
         <Sidebar />
@@ -76,7 +82,13 @@ export default function AnalyticsPage() {
       <div className="min-h-screen flex" style={{ background: "#08080F" }}>
         <Sidebar />
         <div className="flex-1 flex items-center justify-center" style={{ marginLeft: 240 }}>
-          <p className="text-white/60">No analytics data available yet.</p>
+          <div className="text-center">
+            <FileText className="w-12 h-12 text-white/20 mx-auto mb-4" />
+            <p className="text-white/60 text-lg mb-2">No analytics data available yet</p>
+            <p className="text-white/40 text-sm">
+              {user ? "Analyze some contracts to see your stats here." : "Sign in to view analytics."}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -149,22 +161,28 @@ export default function AnalyticsPage() {
         {/* Recent Activity */}
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
           <h2 className="text-xl font-semibold text-white mb-6">Recent Activity</h2>
-          <div className="space-y-4">
-            {stats.recent.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-violet-400" />
+          {stats.recent.length === 0 ? (
+            <div className="text-center py-10">
+              <p className="text-white/40 text-sm">No recent activity</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {stats.recent.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-violet-400" />
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="text-white/80 text-sm">{activity.action}</div>
+                      <div className="text-white/40 text-xs">{activity.contract}</div>
+                    </div>
                   </div>
-                  <div className="flex flex-col">
-                    <div className="text-white/80 text-sm">{activity.action}</div>
-                    <div className="text-white/40 text-xs">{activity.contract}</div>
-                  </div>
+                  <span className="text-white/40 text-xs">{activity.time}</span>
                 </div>
-                <span className="text-white/40 text-xs">{activity.time}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
       </div>
