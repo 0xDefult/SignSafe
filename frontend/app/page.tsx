@@ -45,7 +45,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: "#08080F" }}>
+    <div className="min-h-screen" style={{ background: "#08080F", fontFamily: "var(--font-dm-sans)" }}>
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5" style={{ background: "rgba(8, 8, 15, 0.8)", backdropFilter: "blur(12px)" }}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">

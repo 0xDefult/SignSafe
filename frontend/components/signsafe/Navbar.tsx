@@ -25,13 +25,13 @@ export function Navbar({ title }: NavbarProps) {
         >
           <Menu className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-base lg:text-lg font-medium text-foreground">{title}</h1>
+        <h1 className="text-[15px] lg:text-base font-semibold text-foreground tracking-[-0.01em]">{title}</h1>
       </div>
 
       <div className="flex items-center gap-2 lg:gap-3">
         <button
           onClick={openInvite}
-          className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-white/5 border border-white/10 text-white text-xs lg:text-sm font-medium rounded-lg hover:bg-white/10 active:scale-95 transition-all"
+          className="flex items-center gap-2 px-3 lg:px-4 py-2 bg-white/5 border border-white/10 text-white text-xs lg:text-sm font-medium rounded-lg hover:bg-white/10 active:scale-95 transition-all tracking-[-0.005em]"
         >
           <UserPlus className="w-4 h-4" />
           <span className="hidden sm:inline">Invite</span>

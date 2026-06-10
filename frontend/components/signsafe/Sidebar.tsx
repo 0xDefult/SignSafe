@@ -76,7 +76,7 @@ export function Sidebar() {
         >
           AI
         </div>
-        <span className="text-foreground font-semibold text-base tracking-tight">SignSafe</span>
+        <span className="text-foreground font-semibold text-[15px] tracking-[-0.01em]">SignSafe</span>
       </Link>
 
       {/* User */}

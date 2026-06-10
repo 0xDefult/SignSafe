@@ -34,7 +34,7 @@ export function RightPanel({
     >
       {/* Header bar */}
       <div className="h-[57px] flex items-center px-5 border-b" style={{ borderColor: '#1E1E35' }}>
-        <h2 className="text-foreground font-semibold text-sm">Risk Summary</h2>
+        <h2 className="text-foreground font-semibold text-[13px] tracking-[-0.01em]">Risk Summary</h2>
       </div>
 
       {/* Gauge */}
