@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/signsafe/DashboardLayout";
 import { Navbar } from "@/components/signsafe/Navbar";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
+import { getLocalHistory, type LocalHistoryEntry } from "@/lib/local-history";
 import Link from "next/link";
 
 const statusIcon = (status: string) => {
@@ -29,30 +30,57 @@ export default function ContractsPage() {
 
     const fetchContracts = async () => {
       try {
-        if (!supabase || !user) {
-          setLoading(false);
-          return;
+        const allContracts: any[] = [];
+
+        // 1. Load from Supabase if authenticated
+        if (supabase && user) {
+          const { data, error } = await supabase
+            .from('analysis_history')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            allContracts.push(...data.map(c => ({
+              id: c.id,
+              name: c.filename,
+              status: "Analyzed",
+              risk: c.overall_score === 'red' ? 'High' : c.overall_score === 'yellow' ? 'Medium' : 'Low',
+              riskColor: c.overall_score === 'red' ? 'text-red-400' : c.overall_score === 'yellow' ? 'text-yellow-400' : 'text-emerald-400',
+              date: new Date(c.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
+              source: 'supabase' as const,
+            })));
+          }
         }
 
-        const { data, error } = await supabase
-          .from('analysis_history')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        // 2. Merge local history (deduplicate by filename + date)
+        const seen = new Set(allContracts.map(c => `${c.name}|${c.date}`));
+        const localHistory = getLocalHistory();
+        for (const entry of localHistory) {
+          const dateStr = new Date(entry.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+          const key = `${entry.filename}|${dateStr}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            allContracts.push({
+              id: entry.id,
+              name: entry.filename,
+              status: "Analyzed",
+              risk: entry.overall_score === 'red' ? 'High' : entry.overall_score === 'yellow' ? 'Medium' : 'Low',
+              riskColor: entry.overall_score === 'red' ? 'text-red-400' : entry.overall_score === 'yellow' ? 'text-yellow-400' : 'text-emerald-400',
+              date: dateStr,
+              source: 'local' as const,
+            });
+          }
+        }
 
-        if (error) throw error;
+        // Sort by date descending (most recent first)
+        allContracts.sort((a, b) => {
+          const da = new Date(a.date);
+          const db = new Date(b.date);
+          return isNaN(db.getTime()) || isNaN(da.getTime()) ? 0 : db.getTime() - da.getTime();
+        });
 
-        const mapped = (data || []).map(c => ({
-          id: c.id,
-          name: c.filename,
-          project: "General",
-          status: "Analyzed",
-          risk: c.overall_score === 'red' ? 'High' : c.overall_score === 'yellow' ? 'Medium' : 'Low',
-          riskColor: c.overall_score === 'red' ? 'text-red-400' : c.overall_score === 'yellow' ? 'text-yellow-400' : 'text-emerald-400',
-          date: new Date(c.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }),
-          pages: 'N/A',
-        }));
-        setContracts(mapped);
+        setContracts(allContracts);
       } catch (e) {
         console.error("Error fetching contracts:", e instanceof Error ? e.message : e);
       } finally {

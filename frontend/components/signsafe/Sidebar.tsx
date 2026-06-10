@@ -46,6 +46,7 @@ export function Sidebar() {
     sessionStorage.removeItem("signsafe_analysis");
     sessionStorage.removeItem("signsafe_filename");
     sessionStorage.removeItem("signsafe_guest_count");
+    sessionStorage.removeItem("signsafe_history");
 
     if (supabase) {
       await supabase.auth.signOut();

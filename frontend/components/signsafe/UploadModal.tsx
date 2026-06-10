@@ -6,6 +6,7 @@ import { analyzeContract } from "@/lib/api";
 import PlasmaOrb from "./PlasmaOrb";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
+import { addLocalHistory } from "@/lib/local-history";
 
 const GUEST_MAX_ANALYSES = 7; // auto-clear guest data after this many uploads
 
@@ -117,6 +118,9 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
 
       sessionStorage.setItem("signsafe_analysis", JSON.stringify(result));
       sessionStorage.setItem("signsafe_filename", file.name);
+
+      // Always save to local history so Contracts/Analytics can display it
+      addLocalHistory(result, file.name);
 
       // Save to Supabase only if user is authenticated
       if (supabase && user) {

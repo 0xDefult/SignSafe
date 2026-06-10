@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/components/signsafe/DashboardLayout";
 import { Navbar } from "@/components/signsafe/Navbar";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@/context/UserContext";
+import { getLocalHistory } from "@/lib/local-history";
 
 export default function AnalyticsPage() {
   const { user, loading: authLoading } = useUser();
@@ -17,23 +18,40 @@ export default function AnalyticsPage() {
 
     const fetchAnalytics = async () => {
       try {
-        if (!supabase || !user) {
-          setLoading(false);
-          return;
+        const allContracts: any[] = [];
+
+        // 1. Load from Supabase if authenticated
+        if (supabase && user) {
+          const { data, error } = await supabase
+            .from('analysis_history')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            allContracts.push(...data);
+          }
         }
 
-        const { data: contracts, error } = await supabase
-          .from('analysis_history')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+        // 2. Merge local history (deduplicate by filename)
+        const seenFilenames = new Set(allContracts.map(c => c.filename));
+        const localHistory = getLocalHistory();
+        for (const entry of localHistory) {
+          if (!seenFilenames.has(entry.filename)) {
+            seenFilenames.add(entry.filename);
+            allContracts.push({
+              filename: entry.filename,
+              overall_score: entry.overall_score,
+              created_at: entry.created_at,
+              // minimal shape for stats
+            });
+          }
+        }
 
-        if (error) throw error;
-
-        const total = (contracts || []).length;
-        const red = (contracts || []).filter(c => c.overall_score === 'red').length;
-        const yellow = (contracts || []).filter(c => c.overall_score === 'yellow').length;
-        const green = (contracts || []).filter(c => c.overall_score === 'green').length;
+        const total = allContracts.length;
+        const red = allContracts.filter(c => c.overall_score === 'red').length;
+        const yellow = allContracts.filter(c => c.overall_score === 'yellow').length;
+        const green = allContracts.filter(c => c.overall_score === 'green').length;
 
         const avgScore = total === 0 ? 0 :
           Math.round(((red * 80) + (yellow * 50) + (green * 20)) / total);
@@ -50,7 +68,7 @@ export default function AnalyticsPage() {
             { label: "Medium Risk", count: yellow, percentage: total === 0 ? 0 : Math.round((yellow / total) * 100), color: "bg-yellow-500" },
             { label: "High Risk", count: red, percentage: total === 0 ? 0 : Math.round((red / total) * 100), color: "bg-red-500" },
           ],
-          recent: (contracts || []).slice(0, 5).map(c => ({
+          recent: allContracts.slice(0, 5).map(c => ({
             action: "Contract analyzed",
             contract: c.filename,
             time: new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
