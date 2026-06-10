@@ -17,6 +17,20 @@ Upload your brand deal. Know in 60 seconds if the terms are fair — or if you'r
 - **Indian Creator Context** — Built for India's creator economy, not Western standards
 
 ---
+## Demo (Video is Ai gen)
+<img width="1280" height="667" alt="Screenshot 2026-06-10 at 6 14 43 PM" src="https://github.com/user-attachments/assets/f30ce0a5-cfc8-42de-ae68-dc67828d264d" />
+
+
+https://github.com/user-attachments/assets/2f785c9c-c879-42d2-a832-2ddfdafa43e9
+
+
+
+
+
+
+---
+
+
 
 ## Tech Stack
 
