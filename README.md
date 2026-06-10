@@ -1,5 +1,6 @@
 # SignSafe 
 ### Is it safe to sign?
+https://sign-safe-bay.vercel.app/
 
 AI-powered contract analyzer for content creators, Agencies and micro-influencers.
 Upload your brand deal. Know in 60 seconds if the terms are fair — or if you're getting exploited.
@@ -104,10 +105,10 @@ Open Source · MIT License · Built by creators, for creators.
 
 ---
  
-## Project Issue -
- (Need to solve)
- 1- Api used of free tier so get exhust easily 
- 2- Intial implimented Email Verification. I production i removed Because of Cost issue 
+## Project Issue -(Need to solve)
+
+ 1- Api used of free tier so get exhust easily. 
+ 2- Intial implimented Email Verification. I production i removed Because of Cost issue. 
 ---
  
 ## Ai Usages 
