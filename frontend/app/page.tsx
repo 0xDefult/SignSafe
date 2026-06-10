@@ -208,7 +208,12 @@ export default function LandingPage() {
             </div>
             <span className="text-white/60 text-sm">SignSafe</span>
           </div>
-          <p className="text-white/40 text-sm">© 2026 SignSafe. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <a href="mailto:onesattyam@gmail.com" className="text-white/40 hover:text-white/70 transition-colors text-sm">
+              onesattyam@gmail.com
+            </a>
+            <span className="text-white/40 text-sm">© 2026 SignSafe. All rights reserved.</span>
+          </div>
         </div>
       </footer>
     </div>

@@ -18,6 +18,7 @@ const supportOptions = [
     description: "Send us a detailed message",
     action: "Send Email",
     color: "cyan",
+    href: "mailto:onesattyam@gmail.com",
   },
   {
     icon: Book,
@@ -88,22 +89,29 @@ export default function SupportPage() {
 
           {/* Support Options */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-6 lg:mb-8">
-            {supportOptions.map((option) => (
-              <button
-                key={option.title}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-6 text-left hover:bg-white/10 transition-colors group"
-              >
-                <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl ${colorClasses[option.color].bg} flex items-center justify-center mb-3 lg:mb-4`}>
-                  <option.icon className={`w-5 h-5 lg:w-6 lg:h-6 ${colorClasses[option.color].text}`} />
-                </div>
-                <h3 className="text-white font-semibold text-sm lg:text-base mb-1">{option.title}</h3>
-                <p className="text-white/40 text-xs lg:text-sm mb-3 lg:mb-4">{option.description}</p>
-                <div className="flex items-center gap-2 text-violet-400 text-xs lg:text-sm font-medium">
-                  {option.action}
-                  <ExternalLink className="w-3 h-3 lg:w-4 lg:h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
-              </button>
-            ))}
+            {supportOptions.map((option) => {
+              const Wrapper = (option as any).href ? 'a' : 'button';
+              const extraProps = (option as any).href
+                ? { href: (option as any).href, target: '_blank', rel: 'noopener noreferrer' }
+                : {};
+              return (
+                <Wrapper
+                  key={option.title}
+                  {...extraProps}
+                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 lg:p-6 text-left hover:bg-white/10 transition-colors group block"
+                >
+                  <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl ${colorClasses[option.color].bg} flex items-center justify-center mb-3 lg:mb-4`}>
+                    <option.icon className={`w-5 h-5 lg:w-6 lg:h-6 ${colorClasses[option.color].text}`} />
+                  </div>
+                  <h3 className="text-white font-semibold text-sm lg:text-base mb-1">{option.title}</h3>
+                  <p className="text-white/40 text-xs lg:text-sm mb-3 lg:mb-4">{option.description}</p>
+                  <div className="flex items-center gap-2 text-violet-400 text-xs lg:text-sm font-medium">
+                    {option.action}
+                    <ExternalLink className="w-3 h-3 lg:w-4 lg:h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Wrapper>
+              );
+            })}
           </div>
 
           {/* FAQs */}
@@ -128,9 +136,12 @@ export default function SupportPage() {
               <h3 className="text-white font-semibold text-base lg:text-lg mb-1">Still need help?</h3>
               <p className="text-white/60 text-sm">Our support team is available 24/7 to assist you.</p>
             </div>
-            <button className="px-5 lg:px-6 py-2.5 lg:py-3 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-lg text-white font-medium text-sm hover:opacity-90 transition-opacity shrink-0">
+            <a
+              href="mailto:onesattyam@gmail.com"
+              className="inline-block px-5 lg:px-6 py-2.5 lg:py-3 bg-gradient-to-r from-violet-500 to-cyan-500 rounded-lg text-white font-medium text-sm hover:opacity-90 transition-opacity shrink-0 no-underline"
+            >
               Contact Support
-            </button>
+            </a>
           </div>
         </main>
       </div>
