@@ -80,10 +80,10 @@ function DashboardContent() {
           <Navbar title="Dashboard" />
           <main className="flex-1 overflow-y-auto p-6 lg:p-8 flex items-center justify-center">
             <div className="text-center max-w-md">
-              <h1 className="text-4xl font-serif text-white mb-4">
+              <h1 className="text-3xl lg:text-4xl font-serif text-white mb-4">
                 {userName ? `Welcome, ${userName}!` : "Welcome to SignSafe!"}
               </h1>
-              <p className="text-white/60 mb-8">
+              <p className="text-white/60 text-sm lg:text-base mb-8">
                 You haven&apos;t analyzed any contracts yet. Upload your first brand deal to see the AI in action.
               </p>
               <button
@@ -133,11 +133,11 @@ function DashboardContent() {
 
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
           <div className="max-w-5xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-3xl font-serif text-white mb-2">
+            <div className="mb-6 lg:mb-8">
+              <h1 className="text-2xl lg:text-3xl font-serif text-white mb-1 lg:mb-2">
                 {filename}
               </h1>
-              <p className="text-white/60">AI-powered risk assessment results</p>
+              <p className="text-sm lg:text-base text-white/60">AI-powered risk assessment results</p>
             </div>
 
             <ClauseCards clauses={analysis.clauses} />

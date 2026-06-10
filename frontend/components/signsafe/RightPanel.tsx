@@ -29,7 +29,7 @@ export function RightPanel({
 
   return (
     <aside
-      className="fixed right-0 top-0 h-screen w-[300px] flex flex-col z-20 overflow-y-auto"
+      className="fixed right-0 top-0 h-screen w-[300px] flex-col overflow-y-auto hidden lg:flex"
       style={{ background: '#0D0D1A', borderLeft: '1px solid #1E1E35' }}
     >
       {/* Header bar */}

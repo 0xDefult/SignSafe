@@ -42,18 +42,27 @@ function LayoutContent({
   return (
     <div className="flex min-h-screen" style={{ background: "#08080F" }}>
       <Sidebar />
+
+      {/* Main content — responsive margins: no margin on mobile (sidebar is overlay), full margins on desktop */}
       <main
-        className="flex-1 min-h-screen overflow-y-auto"
-        style={{ marginLeft: 240, marginRight: showRightPanel ? 300 : 0 }}
+        className="flex-1 min-h-screen overflow-y-auto ml-0 lg:ml-60 transition-all duration-300"
+        style={{ marginRight: showRightPanel ? undefined : 0 }}
       >
-        {children}
+        <div className={showRightPanel ? "lg:mr-[300px]" : ""}>
+          {children}
+        </div>
       </main>
-      {showRightPanel && (
-        <RightPanel
-          {...rightPanelProps}
-          onUploadClick={openModal}
-        />
+
+      {/* RightPanel — hidden on mobile, visible on lg+ */}
+      {showRightPanel && rightPanelProps && (
+        <div className="hidden lg:block">
+          <RightPanel
+            {...rightPanelProps}
+            onUploadClick={openModal}
+          />
+        </div>
       )}
+
       <UploadModal isOpen={isOpen} onClose={closeModal} />
     </div>
   );

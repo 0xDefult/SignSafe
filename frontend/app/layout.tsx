@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'sonner'
 import { UploadProvider } from '@/lib/upload-context'
 import { InviteProvider } from '@/lib/invite-context'
+import { MobileSidebarProvider } from '@/lib/mobile-sidebar-context'
 import { UserProvider } from '@/context/UserContext'
 import InviteModal from '@/components/signsafe/InviteModal'
 
@@ -34,9 +35,11 @@ export default function RootLayout({
       <body className={`${dmSans.variable} ${instrumentSerif.variable} font-sans antialiased`}>
         <UploadProvider>
           <InviteProvider>
-            <UserProvider>
-              {children}
-            </UserProvider>
+            <MobileSidebarProvider>
+              <UserProvider>
+                {children}
+              </UserProvider>
+            </MobileSidebarProvider>
             <InviteModal />
             <Toaster position="top-center" expand={false} richColors />
           </InviteProvider>
