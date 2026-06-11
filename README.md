@@ -1,132 +1,72 @@
-# SignSafe 
-### Is it safe to sign?
-https://sign-safe-bay.vercel.app/
+# SignSafe
 
-AI-powered contract analyzer for content creators, Agencies and micro-influencers.
-Upload your brand deal. Know in 60 seconds if the terms are fair — or if you're getting exploited.
+Live link: https://sign-safe-bay.vercel.app/
 
----
+This is an AI contract analyzer I built for content creators, agencies, and micro-influencers in India. You just upload your brand deal contract, and it tells you in about 60 seconds if the terms are fair or if you're getting exploited.
 
-## Features
+What it does:
+- Breaks down the contract into red, yellow, and green clauses so it's easy to read.
+- Explains the legal jargon in plain English.
+- Gives you a straight answer on whether you should sign it or not, instead of just a summary.
+- Shows you the true cost of exclusivity clauses in rupees.
+- I'm also working on a feature that rewrites bad clauses in your favor so you can send them as a counter-offer.
 
-- **Contract Analysis** — Red/Yellow/Green clause-by-clause breakdown
-- **Plain English** — Every clause explained in creator language, not legalese  
-- **Opinionated Verdicts** — Not summaries. Actual verdicts. "DO NOT SIGN."
-- **Counter-Offer Generator** — AI rewrites bad clauses in your favor, ready to send (Coming Soon)
-- **True Cost Calculator** — See exactly how much that exclusivity clause will cost you in ₹
-- **Indian Creator Context** — Built for India's creator economy, not Western standards
-
----
-## Demo (Video is Ai gen)
-<img width="1280" height="667" alt="Screenshot 2026-06-10 at 6 14 43 PM" src="https://github.com/user-attachments/assets/f30ce0a5-cfc8-42de-ae68-dc67828d264d" />
-
+Demo (the video is AI generated):
+<img width="1280" height="667" alt="Screenshot 2026-06-10 at 6 14 43 PM" src="https://github.com/user-attachments/assets/f30ce0a5-cfc8-42de-ae68-dc67828d264d" />
 
 https://github.com/user-attachments/assets/2f785c9c-c879-42d2-a832-2ddfdafa43e9
 
+Tech stack:
+- AI: Google Gemini (AI Studio API)
+- Backend: Python 3.11 and FastAPI
+- File parsing: pdfplumber and python-docx
+- Frontend: Next.js 14, TypeScript, Tailwind
+- Hosting: Vercel for the frontend, Railway for the backend
 
+How to run it locally:
 
-
-
-
----
-
-
-
-## Tech Stack
-
-| Layer | Tech |
-|---|---|
-| AI | Google Gemini via AI Studio API |
-| Backend | Python 3.11 + FastAPI |
-| PDF Parsing | pdfplumber + python-docx |
-| Frontend | Next.js 14 + TypeScript + Tailwind |
-| Hosting | Vercel (frontend) + Railway (backend) |
-
----
-
-## Quick Start ( Locally )
-
-### Backend
+For the backend:
 ```bash
 cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Add your GEMINI_API_KEY to .env
+# Make sure to add your GEMINI_API_KEY to the .env file
 uvicorn main:app --reload --port 8000
 ```
 
-### Frontend
-```bash
+
+For the frontend:
+
+Bash```
 cd frontend
 npm install
 cp .env.local.example .env.local
-npm run dev
-```
+pnpm run dev```
 
-Open http://localhost:3000
+Then just open http://localhost:3000 in your browser.
 
----
+## Env variables needed:
+In your backend/.env you need your GEMINI_API_KEY and FRONTEND_URL=http://localhost:3000.
+In your frontend/.env.local you need NEXT_PUBLIC_API_URL=http://localhost:8000.
 
-## Environment Variables
+## Main API endpoints:
+POST /analyze - Upload a contract to get it analyzed
+POST /counter-offer - Generate an AI rewritten clause
+POST /calculate - True cost calculator
+GET /health - Server health check
 
-### backend/.env
-```
-GEMINI_API_KEY=your_google_ai_studio_key
-GEMMA_MODEL=gemma-3-27b-it
-FRONTEND_URL=http://localhost:3000
-```
+## Roles (coming soon):
+I'm adding an access control system so teams can use this. It will have Admin (full control), Legal Analyst, Reviewer, and Viewer (read-only) roles.
 
-### frontend/.env.local
-```
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
+Known issues I need to fix:
 
----
+I'm using the free tier for the API right now, so the limits get exhausted pretty easily.
 
-## API Endpoints
+I originally implemented email verification, but I had to remove it for production because of cost issues.
 
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | /analyze | Upload contract → get analysis |
-| POST | /counter-offer | Get AI-rewritten clause |
-| POST | /calculate | True cost calculator |
-| GET | /health | Health check |
+## AI usage:
+Just to be transparent, I used AI to help write some of the text on the website itself, debug my code, and help me figure out the system design.
 
----
-
----
- 
-## Access Control & Roles (Rolling soon)
- 
-The system uses a team-based role system to manage permissions:
- 
-| Role | Permissions |
-| :--- | :--- |
-| **ADMIN** | **Full Control:** Create teams, invite new members, modify member roles, and remove members from a team. |
-| **LEGAL_ANALYST** | **Member Access:** Access team dashboards and view members. (Analysis permissions pending). |
-| **REVIEWER** | **Member Access:** Access team dashboards and view members. (Review permissions pending). |
-| **VIEWER** | **Read-Only:** View team membership and basic team details. |
- 
----
- 
-## Built for Hack Club Horizons
-
-Open Source · MIT License · Built by creators, for creators.
-
-*"Every creator deserves a lawyer in their pocket."*
-
----
- 
-## Project Issue -(Need to solve)
-
- 1- Api used of free tier so get exhust easily. 
- 2- Intial implimented Email Verification. I production i removed Because of Cost issue. 
----
- 
-## Ai Usages 
-
-* Used to for writing Content on Site 
-* Debegguing and understadning Tech 
-* System Desing (Help how to Impliment )
+Built for Hack Club Horizons. MIT License.
